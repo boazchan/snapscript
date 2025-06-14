@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import ImageUpload from "@/components/ImageUpload"
-import { Camera, Sparkles } from "lucide-react"
+import { Camera, Sparkles, Copy, Check } from "lucide-react"
 
 export default function Home() {
   const [input, setInput] = useState("")
@@ -21,6 +21,7 @@ export default function Home() {
   const [displayCopy, setDisplayCopy] = useState("") // The copy currently displayed to the user
   const [customPoint, setCustomPoint] = useState("") // User-provided product selling point
   const [aiSuggestedSellingPoints, setAiSuggestedSellingPoints] = useState<string[]>([]) // New state for AI suggested selling points
+  const [isCopied, setIsCopied] = useState(false) // State for copy button feedback
 
   const handleGenerate = async () => {
     if (!input && !currentImageFile) {
@@ -166,6 +167,28 @@ export default function Home() {
     });
   };
 
+  const handleCopyToClipboard = async () => {
+    const textToCopy = displayCopy || output
+    if (!textToCopy) return
+
+    try {
+      await navigator.clipboard.writeText(textToCopy)
+      setIsCopied(true)
+      setTimeout(() => setIsCopied(false), 2000) // Reset after 2 seconds
+    } catch (err) {
+      console.error('Failed to copy text: ', err)
+      // Fallback for older browsers
+      const textArea = document.createElement('textarea')
+      textArea.value = textToCopy
+      document.body.appendChild(textArea)
+      textArea.select()
+      document.execCommand('copy')
+      document.body.removeChild(textArea)
+      setIsCopied(true)
+      setTimeout(() => setIsCopied(false), 2000)
+    }
+  }
+
   return (
     <main 
       className="min-h-screen relative flex flex-col"
@@ -183,9 +206,11 @@ export default function Home() {
         style={{
           height: '56px',
           backgroundColor: '#FFFFFF',
-          boxShadow: '0px 4px 4px 0px rgba(51, 51, 51, 0.25)',
+          boxShadow: '0px 4px 4px 0px rgba(194, 194, 194, 0.25)',
           padding: '10px 16px',
-          gap: '10px'
+          gap: '10px',
+          position: 'relative',
+          zIndex: 10
         }}
       >
         <div className="flex flex-row items-center" style={{ gap: '14px', width: '100%' }}>
@@ -222,7 +247,8 @@ export default function Home() {
           style={{
             width: '516px',
             height: '100%',
-            position: 'relative'
+            position: 'relative',
+            zIndex: 1
           }}
         >
           <div 
@@ -265,14 +291,18 @@ export default function Home() {
                       border: '0.5px solid rgba(180, 201, 207, 0.5)',
                       borderRadius: '6px',
                       padding: '10px',
+                      height: '48px',
                       fontFamily: 'Nunito Sans',
                       fontSize: '14px',
-                      color: '#84929E'
+                      color: '#000000'
                     }}
                   />
                   <Button
                     onClick={handleUpdateProductNameInCopy}
                     disabled={isLoading || !originalCopy || !input || input === productNameUsedInOriginalCopy}
+                    style={{
+                      height: '48px'
+                    }}
                   >
                     確認
                   </Button>
@@ -302,7 +332,7 @@ export default function Home() {
                       height: '48px',
                       fontFamily: 'Nunito Sans',
                       fontSize: '14px',
-                      color: '#84929E'
+                      color: '#000000'
                     }}
                   >
                     <SelectValue placeholder="請選擇" />
@@ -338,9 +368,10 @@ export default function Home() {
                     border: '0.5px solid rgba(180, 201, 207, 0.5)',
                     borderRadius: '6px',
                     padding: '10px',
+                    height: '48px',
                     fontFamily: 'Nunito Sans',
                     fontSize: '14px',
-                    color: '#84929E'
+                    color: '#000000'
                   }}
                 />
                 {aiSuggestedSellingPoints.length > 0 && (
@@ -369,9 +400,11 @@ export default function Home() {
               width: '516px',
               height: '81px',
               backgroundColor: '#FFFFFF',
-              boxShadow: '0px -4px 4px 0px rgba(51, 51, 51, 0.25)',
+              boxShadow: '0px -4px 4px 0px rgba(194, 194, 194, 0.25)',
               padding: '16px 10px',
-              gap: '10px'
+              gap: '10px',
+              position: 'relative',
+              zIndex: 2
             }}
           >
             <Button 
@@ -380,11 +413,11 @@ export default function Home() {
               style={{
                 backgroundColor: '#4554E5',
                 borderRadius: '32px',
-                padding: '10px 96px',
+                padding: '8px 82px',
                 fontFamily: 'Inter',
-                fontSize: '24px',
+                fontSize: '18px',
                 fontWeight: 500,
-                lineHeight: '29.05px',
+                lineHeight: '21.78px',
                 color: '#FFFFFF'
               }}
             >
@@ -401,8 +434,12 @@ export default function Home() {
           }}
         >
           {(output || displayCopy) ? (
-            <Card className="h-full" style={{ backgroundColor: 'rgba(255, 255, 255, 0.95)' }}>
-              <CardHeader>
+            <Card className="max-w-4xl w-full" style={{ 
+              backgroundColor: 'rgba(255, 255, 255, 0.95)',
+              maxHeight: '600px',
+              height: 'auto'
+            }}>
+              <CardHeader style={{ paddingBottom: '12px' }}>
                 <CardTitle 
                   style={{
                     fontFamily: 'Inter',
@@ -414,11 +451,11 @@ export default function Home() {
                   生成結果
                 </CardTitle>
               </CardHeader>
-              <CardContent className="flex-grow">
+              <CardContent>
                 <Textarea
                   value={displayCopy || output}
                   readOnly
-                  className="min-h-[400px] resize-none"
+                  className="resize-none"
                   style={{
                     fontFamily: 'Inter',
                     fontSize: '16px',
@@ -426,18 +463,43 @@ export default function Home() {
                     backgroundColor: '#F8F9FA',
                     border: '1px solid #E5E7EB',
                     borderRadius: '8px',
-                    padding: '16px'
+                    padding: '16px',
+                    minHeight: '300px',
+                    maxHeight: '450px'
                   }}
                 />
+                <div className="flex justify-center mt-4">
+                  <Button
+                    onClick={handleCopyToClipboard}
+                    disabled={!displayCopy && !output}
+                    className="flex items-center gap-2"
+                    style={{
+                      backgroundColor: isCopied ? '#10B981' : '#4554E5',
+                      color: '#FFFFFF',
+                      border: 'none',
+                      borderRadius: '8px',
+                      padding: '8px 16px',
+                      fontFamily: 'Inter',
+                      fontSize: '14px',
+                      fontWeight: 500,
+                      transition: 'background-color 0.2s'
+                    }}
+                  >
+                    {isCopied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                    {isCopied ? '已複製' : '複製文案'}
+                  </Button>
+                </div>
               </CardContent>
             </Card>
           ) : (
             <div 
-              className="h-full flex items-center justify-center"
+              className="flex items-center justify-center max-w-4xl w-full"
               style={{
                 border: '2px dashed rgba(229, 231, 235, 0.8)',
                 borderRadius: '12px',
-                backgroundColor: 'rgba(248, 249, 250, 0.8)'
+                backgroundColor: 'rgba(248, 249, 250, 0.8)',
+                maxHeight: '600px',
+                height: '400px'
               }}
             >
               <div className="text-center">

@@ -119,4 +119,55 @@
   body {
     @apply bg-background text-foreground;
   }
+  
+  /* 統一 placeholder 文字顏色 */
+  input::-webkit-input-placeholder,
+  textarea::-webkit-input-placeholder {
+    color: #84929E !important;
+  }
+  
+  input::-moz-placeholder,
+  textarea::-moz-placeholder {
+    color: #84929E !important;
+    opacity: 1;
+  }
+  
+  input:-ms-input-placeholder,
+  textarea:-ms-input-placeholder {
+    color: #84929E !important;
+  }
+  
+  input::placeholder,
+  textarea::placeholder {
+    color: #84929E !important;
+  }
+  
+  /* Select 元件的 placeholder 樣式 */
+  [data-placeholder] {
+    color: #84929E !important;
+  }
+  
+  /* 統一所有輸入欄位的背景色 */
+  input[type="text"],
+  input[type="email"], 
+  input[type="password"],
+  input[type="search"],
+  textarea,
+  select,
+  .select-trigger,
+  [role="combobox"] {
+    background-color: #FFFFFF !important;
+  }
+  
+  /* 輸入欄位 focus 狀態也保持白色背景 */
+  input[type="text"]:focus,
+  input[type="email"]:focus,
+  input[type="password"]:focus,
+  input[type="search"]:focus,
+  textarea:focus,
+  select:focus,
+  .select-trigger:focus,
+  [role="combobox"]:focus {
+    background-color: #FFFFFF !important;
+  }
 }

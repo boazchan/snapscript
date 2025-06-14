@@ -28,7 +28,7 @@ const ImageUpload: React.FC<ImageUploadProps> = ({ onImageChange }) => {
     // 文件大小檢查 (4MB = 4 * 1024 * 1024 bytes)
     const maxSize = 4 * 1024 * 1024
     if (file.size > maxSize) {
-      alert('文件大小超過限制！請選擇小於 4MB 的文件。')
+      alert('文件大小超過限制！請選擇小於 4mb 的文件。')
       return
     }
 
@@ -36,14 +36,11 @@ const ImageUpload: React.FC<ImageUploadProps> = ({ onImageChange }) => {
     const allowedTypes = [
       'image/jpeg',
       'image/jpg', 
-      'image/png',
-      'image/gif',
-      'image/webp',
-      'video/mp4'
+      'image/png'
     ]
     
     if (!allowedTypes.includes(file.type)) {
-      alert('不支援的文件格式！請選擇 JPEG、PNG、GIF、WEBP 圖片或 MP4 視頻。')
+      alert('不支援的文件格式！請選擇 JPEG 或 PNG 圖片。')
       return
     }
 
@@ -103,7 +100,7 @@ const ImageUpload: React.FC<ImageUploadProps> = ({ onImageChange }) => {
             backgroundColor: '#FFFFFF',
             border: '2px dashed rgba(180, 201, 207, 0.5)',
             borderRadius: '6px',
-            padding: '18px'
+            padding: '12px 18px'
           }}
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
@@ -144,9 +141,9 @@ const ImageUpload: React.FC<ImageUploadProps> = ({ onImageChange }) => {
                   className="font-medium"
                   style={{
                     fontFamily: 'Inter',
-                    fontSize: '16px',
+                    fontSize: '14px',
                     fontWeight: 500,
-                    lineHeight: '19.36px',
+                    lineHeight: '16.94px',
                     color: '#292D32',
                     width: '100%'
                   }}
@@ -156,9 +153,9 @@ const ImageUpload: React.FC<ImageUploadProps> = ({ onImageChange }) => {
                 <p 
                   style={{
                     fontFamily: 'Inter',
-                    fontSize: '16px',
+                    fontSize: '14px',
                     fontWeight: 500,
-                    lineHeight: '19.36px',
+                    lineHeight: '16.94px',
                     color: '#A9ACB4',
                     width: '100%',
                     marginTop: '15px'
@@ -174,15 +171,15 @@ const ImageUpload: React.FC<ImageUploadProps> = ({ onImageChange }) => {
                 onClick={handleUploadClick}
                 style={{
                   backgroundColor: '#FFFFFF',
-                  border: '2px solid #CBD0DC',
+                  border: '1px solid #CBD0DC',
                   borderRadius: '6px',
-                  padding: '16px',
-                  width: '96px',
-                  height: '51px',
+                  padding: '8px 16px',
+                  width: '88px',
+                  height: '33px',
                   fontFamily: 'Inter',
-                  fontSize: '16px',
+                  fontSize: '14px',
                   fontWeight: 500,
-                  lineHeight: '19.36px',
+                  lineHeight: '16.94px',
                   color: '#54575C'
                 }}
               >
@@ -194,22 +191,22 @@ const ImageUpload: React.FC<ImageUploadProps> = ({ onImageChange }) => {
             <p 
               style={{
                 fontFamily: 'Inter',
-                fontSize: '16px',
+                fontSize: '14px',
                 fontWeight: 500,
-                lineHeight: '19.36px',
+                lineHeight: '16.94px',
                 color: '#A9ACB4',
                 width: '100%',
                 textAlign: 'center'
               }}
             >
-              支援 JPEG、PNG、GIF、WEBP 圖片及 MP4 視頻，限制 4MB 以內
+              支援格式: JPEG, PNG 檔案大小限制為4mb內
             </p>
           </div>
           
           <Input
             ref={fileInputRef}
             type="file"
-            accept="image/*,video/mp4"
+            accept="image/jpeg,image/jpg,image/png"
             onChange={handleFileChange}
             className="hidden"
           />
