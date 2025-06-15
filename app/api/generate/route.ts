@@ -15,12 +15,6 @@ export async function POST(req: Request) {
       customPoint?: string; // Optional: user-provided product selling point
     } = await req.json()
 
-    const tonePromptMap = {
-      "搞笑": "以幽默風趣、輕鬆搞笑的語氣，加入時下流行梗或誇張的描述，讓人會心一笑並想分享。",
-      "專業": "以權威、專業、資訊豐富的語氣，強調產品的技術優勢、品質保證或獨特功能，給人可靠、信任感。",
-      "簡潔": "以簡潔有力、直擊人心的語氣，用最少的文字傳達產品的核心價值和行動呼籲，快速抓住讀者注意力。",
-    }
-
     let identifiedProductName: string = item || "" // Initialize with provided item or empty string
     let identifiedSellingPoints: string[] = [] // New: Initialize identified selling points
     let finalCopy: string = ""
@@ -97,49 +91,53 @@ export async function POST(req: Request) {
       }
     }
 
-    // --- Step 2: Generate IG Copy (requires identifiedProductName) ---
+    // --- Step 2: Generate Copy (requires identifiedProductName) ---
     if (!identifiedProductName) {
       return NextResponse.json({ text: "請輸入商品名稱或上傳圖片以生成文案。" }, { status: 400 })
     }
 
-    const igCopySystemPrompt = `你是一位專業的 Instagram 行銷文案寫手。請根據以下條件撰寫一段 IG 貼文文案（繁體中文）：
+    // Combine identified selling points with custom point if provided
+    let allSellingPoints = [...identifiedSellingPoints];
+    if (customPoint && customPoint.trim()) {
+      allSellingPoints.push(customPoint.trim());
+    }
 
-- 商品名稱：${identifiedProductName}
-- 語氣風格：${tone}（搞笑、專業、簡潔）
-${customPoint ? `- 使用者補充的產品賣點：${customPoint}` : ''}
+    const copySystemPrompt = `你是一位資深品牌行銷文案撰寫專家，擅長根據產品資訊撰寫具吸引力、風格一致、商業導向的文案內容。
 
-條件：
-- ${customPoint ? '將產品賣點合理融入文案中' : ''}
-- 加入 emoji 與 hashtag
-- 控制在 2～4 行，可直接貼 IG 使用
-- 文風要自然、吸睛、有情境感與吸引力
-請以 JSON 格式回應，僅包含一個鍵 'text'，其值為 IG 貼文文案。`
+請依據以下 JSON 格式的產品資料，撰寫一段 40～60 字以內的商品介紹文案，語氣自然、吸睛、具有購買誘因。文案需能用於電商平台、社群貼文開頭，並具備以下特性：
 
-    const igCopyUserPrompt = `請根據以上資訊，撰寫一段繁體中文 IG 文案，語氣為「${tonePromptMap[tone]}」${customPoint ? `，並融入產品賣點「${customPoint}」` : ''}。`
+1. 將「商品名稱」自然地融入開頭或文案中，不可缺漏。
+2. 至少涵蓋兩個產品賣點，並以轉化為口語化敘述，不可直接列點。
+3. 文字風格需符合「現代品牌語氣」：口語、有節奏、但不浮誇或生硬。
+4. 禁止使用過度誇張或不具體詞彙（如：「神器」、「必買」、「史上最強」、「完美无缺」等）。
+5. 回應請僅產出一段繁體中文文案，不需額外解釋或格式化。
 
-    // Using Gemini for text generation as well for consistency, or keep OpenAI if preferred
-    const textModel = genAI.getGenerativeModel({ model: "gemini-1.5-flash" }); // Updated to gemini-1.5-flash for text generation
+以下為輸入資料（JSON）：
+{
+  "item": "${identifiedProductName}",
+  "selling_points": [${allSellingPoints.map(point => `"${point}"`).join(', ')}]
+}`
+
+    const copyUserPrompt = `請根據以上 JSON 資料生成文案。`
+
+    // Using Gemini for text generation
+    const textModel = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
     try {
       const result = await textModel.generateContent([
-        igCopySystemPrompt,
-        igCopyUserPrompt
+        copySystemPrompt,
+        copyUserPrompt
       ]);
       const response = await result.response;
       let textContent = response.text();
 
       console.log("Raw Gemini Copy Response Text:", textContent); // Added for debugging
 
-      // Use regex to extract JSON content from markdown code block if present
-      const jsonMatch = textContent.match(/```json\s*([\s\S]*?)\s*```/);
-      if (jsonMatch && jsonMatch[1]) {
-        textContent = jsonMatch[1];
-      }
-
-      console.log("Processed Gemini Copy Text for JSON parsing:", textContent); // Added for debugging
-
-      const parsedCopyContent = JSON.parse(textContent);
-      finalCopy = parsedCopyContent.text?.trim() || "產生失敗，請稍後再試";
+      // Since the new prompt doesn't require JSON format, we can use the text directly
+      // But let's clean it up by removing any potential markdown formatting
+      textContent = textContent.replace(/```[^`]*```/g, '').replace(/`/g, '').trim();
+      
+      finalCopy = textContent || "產生失敗，請稍後再試";
 
     } catch (e) {
       console.error("Failed to get or parse copy API response from Gemini:", e);

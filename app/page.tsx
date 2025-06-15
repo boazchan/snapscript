@@ -285,7 +285,7 @@ export default function Home() {
                     onChange={(e) => setInput(e.target.value)}
                     placeholder={currentImageFile ? "AI辨識中..." : "請輸入"}
                     disabled={isLoading}
-                    className="flex-grow"
+                    className={originalCopy && input !== productNameUsedInOriginalCopy ? "flex-grow" : "w-full"}
                     style={{
                       backgroundColor: '#FFFFFF',
                       border: '0.5px solid rgba(180, 201, 207, 0.5)',
@@ -297,15 +297,18 @@ export default function Home() {
                       color: '#000000'
                     }}
                   />
-                  <Button
-                    onClick={handleUpdateProductNameInCopy}
-                    disabled={isLoading || !originalCopy || !input || input === productNameUsedInOriginalCopy}
-                    style={{
-                      height: '48px'
-                    }}
-                  >
-                    確認
-                  </Button>
+                  {originalCopy && input !== productNameUsedInOriginalCopy && input.trim() !== '' && (
+                    <Button
+                      onClick={handleUpdateProductNameInCopy}
+                      disabled={isLoading}
+                      style={{
+                        height: '48px',
+                        whiteSpace: 'nowrap'
+                      }}
+                    >
+                      更換商品名稱
+                    </Button>
+                  )}
                 </div>
               </div>
               <div className="grid gap-2">
