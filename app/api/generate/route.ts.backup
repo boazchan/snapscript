@@ -8,17 +8,16 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
 
 export async function POST(req: Request) {
   try {
-    const { item, tone, image, customPoint, platforms }: {
+    const { item, tone, image, customPoint }: {
       item?: string; // Optional: if an item name is directly provided (without image)
       tone: "搞笑" | "專業" | "簡潔";
       image?: string; // Optional: base64 image data
       customPoint?: string; // Optional: user-provided product selling point
-      platforms?: string[]; // Optional: selected platforms for generation
     } = await req.json()
 
     let identifiedProductName: string = item || "" // Initialize with provided item or empty string
     let identifiedSellingPoints: string[] = [] // New: Initialize identified selling points
-    let platformResults: {[key: string]: string} = {}
+    let finalCopy: string = ""
 
     // --- Step 1: Identify Product Name and Selling Points from Image (if image is provided) ---
     if (image) {
@@ -103,103 +102,54 @@ export async function POST(req: Request) {
       allSellingPoints.push(customPoint.trim());
     }
 
-    // Platform-specific prompts
-    const platformPrompts = {
-      instagram: `你是一位 Instagram 社群行銷專家，擅長撰寫吸引年輕用戶的貼文文案。
+    const copySystemPrompt = `你是一位資深品牌行銷文案撰寫專家，擅長根據產品資訊撰寫具吸引力、風格一致、商業導向的文案內容。
 
-請依據以下產品資訊，撰寫一段 80～150 字的 Instagram 貼文文案：
+請依據以下 JSON 格式的產品資料，撰寫一段 40～60 字以內的商品介紹文案，語氣自然、吸睛、具有購買誘因。文案需能用於電商平台、社群貼文開頭，並具備以下特性：
 
-1. 開頭需自然融入「商品名稱」
-2. 語氣活潑、有趣，符合 Instagram 年輕用戶喜好
-3. 適度使用 emoji 增加視覺吸引力
-4. 包含明確的行動呼籲 (CTA)
-5. 至少提及兩個產品賣點，但要自然融入文案中
-6. 風格要符合 Instagram 限時動態或貼文的調性
+1. 將「商品名稱」自然地融入開頭或文案中，不可缺漏。
+2. 至少涵蓋兩個產品賣點，並以轉化為口語化敘述，不可直接列點。
+3. 文字風格需符合「現代品牌語氣」：口語、有節奏、但不浮誇或生硬。
+4. 禁止使用過度誇張或不具體詞彙（如：「神器」、「必買」、「史上最強」、「完美无缺」等）。
+5. 回應請僅產出一段繁體中文文案，不需額外解釋或格式化。
 
-產品資訊：
-商品名稱：${identifiedProductName}
-賣點：${allSellingPoints.join('、')}
+以下為輸入資料（JSON）：
+{
+  "item": "${identifiedProductName}",
+  "selling_points": [${allSellingPoints.map(point => `"${point}"`).join(', ')}]
+}`
 
-請直接輸出文案，不需額外解釋。`,
-
-      facebook: `你是一位 Facebook 粉專經營專家，擅長撰寫理性與感性並重的貼文內容。
-
-請依據以下產品資訊，撰寫一段 150～250 字的 Facebook 貼文文案：
-
-1. 開頭需自然融入「商品名稱」
-2. 語氣專業但親切，適合廣泛年齡層
-3. 內容要有理性說服力，提供具體產品優勢
-4. 結尾包含相關 hashtag (3-5個)
-5. 至少詳細說明兩個主要賣點
-6. 可包含使用情境描述或客戶需求痛點
-
-產品資訊：
-商品名稱：${identifiedProductName}
-賣點：${allSellingPoints.join('、')}
-
-請直接輸出文案，不需額外解釋。`,
-
-      電商網站: `你是一位電商平台文案專家，擅長撰寫促進購買轉換的商品描述。
-
-請依據以下產品資訊，撰寫一段 100～200 字的電商商品描述文案：
-
-1. 開頭需自然融入「商品名稱」
-2. 內容結構化、條理清晰，易於快速閱讀
-3. 重點突出產品核心價值與差異化優勢
-4. 包含具體的產品特色描述
-5. 語氣專業可信，建立購買信心
-6. 適合用於商品詳情頁面或商品列表描述
-
-產品資訊：
-商品名稱：${identifiedProductName}
-賣點：${allSellingPoints.join('、')}
-
-請直接輸出文案，不需額外解釋。`
-    }
-
-    // Determine which platforms to generate for
-    let targetPlatforms = platforms || ["全部"];
-    if (targetPlatforms.includes("全部")) {
-      targetPlatforms = ["instagram", "facebook", "電商網站"];
-    }
+    const copyUserPrompt = `請根據以上 JSON 資料生成文案。`
 
     // Using Gemini for text generation
     const textModel = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
-    // Generate copy for each platform
-    for (const platform of targetPlatforms) {
-      if (platformPrompts[platform as keyof typeof platformPrompts]) {
-        try {
-          const result = await textModel.generateContent([
-            platformPrompts[platform as keyof typeof platformPrompts]
-          ]);
-          const response = await result.response;
-          let textContent = response.text();
+    try {
+      const result = await textModel.generateContent([
+        copySystemPrompt,
+        copyUserPrompt
+      ]);
+      const response = await result.response;
+      let textContent = response.text();
 
-          console.log(`Raw Gemini ${platform} Response Text:`, textContent);
+      console.log("Raw Gemini Copy Response Text:", textContent); // Added for debugging
 
-          // Clean up the response
-          textContent = textContent.replace(/```[^`]*```/g, '').replace(/`/g, '').trim();
-          
-          platformResults[platform] = textContent || "產生失敗，請稍後再試";
+      // Since the new prompt doesn't require JSON format, we can use the text directly
+      // But let's clean it up by removing any potential markdown formatting
+      textContent = textContent.replace(/```[^`]*```/g, '').replace(/`/g, '').trim();
+      
+      finalCopy = textContent || "產生失敗，請稍後再試";
 
-        } catch (e) {
-          console.error(`Failed to generate copy for ${platform}:`, e);
-          platformResults[platform] = "此平台文案生成失敗，請稍後再試。";
-        }
-      }
+    } catch (e) {
+      console.error("Failed to get or parse copy API response from Gemini:", e);
+      return NextResponse.json({ text: "文案生成失敗，請稍後再試。" }, { status: 500 });
     }
 
     if (image) {
-      // For image input, return product name along with platform results
-      return NextResponse.json({ 
-        product_name: identifiedProductName, 
-        selling_points: identifiedSellingPoints, 
-        platform_results: platformResults 
-      })
+      // For image input, return product name along with the copy
+      return NextResponse.json({ product_name: identifiedProductName, selling_points: identifiedSellingPoints, text: finalCopy })
     } else {
-      // For text input, return platform results
-      return NextResponse.json({ platform_results: platformResults })
+      // For text input, just return the copy
+      return NextResponse.json({ text: finalCopy })
     }
   } catch (error) {
     console.error('Error during API call:', error)

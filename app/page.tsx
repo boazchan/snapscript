@@ -21,7 +21,32 @@ export default function Home() {
   const [displayCopy, setDisplayCopy] = useState("") // The copy currently displayed to the user
   const [customPoint, setCustomPoint] = useState("") // User-provided product selling point
   const [aiSuggestedSellingPoints, setAiSuggestedSellingPoints] = useState<string[]>([]) // New state for AI suggested selling points
-  const [isCopied, setIsCopied] = useState(false) // State for copy button feedback
+  const [copiedStates, setCopiedStates] = useState<{[key: string]: boolean}>({}) // State for copy button feedback per platform
+  const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>(["全部"])
+  const [platformResults, setPlatformResults] = useState<{[key: string]: string}>({})
+
+  const platforms = [
+    { id: "全部", label: "全部" },
+    { id: "instagram", label: "Instagram" }, 
+    { id: "facebook", label: "facebook" },
+    { id: "電商網站", label: "網站平台" }
+  ]
+
+  const handlePlatformChange = (platformId: string) => {
+    if (platformId === "全部") {
+      setSelectedPlatforms(["全部"])
+    } else {
+      setSelectedPlatforms(prev => {
+        const filtered = prev.filter(p => p !== "全部")
+        if (filtered.includes(platformId)) {
+          const newSelection = filtered.filter(p => p !== platformId)
+          return newSelection.length === 0 ? ["全部"] : newSelection
+        } else {
+          return [...filtered, platformId]
+        }
+      })
+    }
+  }
 
   const handleGenerate = async () => {
     if (!input && !currentImageFile) {
@@ -34,9 +59,10 @@ export default function Home() {
     setOriginalCopy("")
     setDisplayCopy("")
     setProductNameUsedInOriginalCopy("")
+    setPlatformResults({})
 
     try {
-      let data: { text: string; product_name?: string; selling_points?: string[] }
+      let data: { text?: string; product_name?: string; selling_points?: string[]; platform_results?: {[key: string]: string} }
 
       if (currentImageFile) {
         const reader = new FileReader()
@@ -49,19 +75,25 @@ export default function Home() {
               image: base64Image,
               tone,
               customPoint,
+              platforms: selectedPlatforms,
             }),
           })
           data = await response.json()
           if (data.product_name) {
             setInput(data.product_name) // Populate input with AI-detected name
             setProductNameUsedInOriginalCopy(data.product_name)
-            setOriginalCopy(data.text)
-            setDisplayCopy(data.text)
+            if (data.platform_results) {
+              setPlatformResults(data.platform_results)
+              // For backward compatibility, set original and display copy to the first platform result
+              const firstPlatformResult = Object.values(data.platform_results)[0] || ""
+              setOriginalCopy(firstPlatformResult)
+              setDisplayCopy(firstPlatformResult)
+            }
             if (data.selling_points) {
               setAiSuggestedSellingPoints(data.selling_points) // Set AI suggested selling points
             }
           } else {
-            setOutput(data.text)
+            setOutput(data.text || "產生失敗")
           }
           setIsLoading(false)
         }
@@ -74,13 +106,21 @@ export default function Home() {
             item: input,
             tone,
             customPoint,
+            platforms: selectedPlatforms,
           }),
         })
         data = await response.json()
         setProductNameUsedInOriginalCopy(input) // Use current input as the product name for original copy
-        setOriginalCopy(data.text)
-        setDisplayCopy(data.text)
-        setOutput(data.text) // Fallback for pure text output (if image not used)
+        if (data.platform_results) {
+          setPlatformResults(data.platform_results)
+          // For backward compatibility, set original and display copy to the first platform result
+          const firstPlatformResult = Object.values(data.platform_results)[0] || ""
+          setOriginalCopy(firstPlatformResult)
+          setDisplayCopy(firstPlatformResult)
+          setOutput(firstPlatformResult) // Fallback for pure text output (if image not used)
+        } else {
+          setOutput(data.text || "產生失敗")
+        }
         setIsLoading(false)
       }
     } catch (error) {
@@ -99,6 +139,7 @@ export default function Home() {
     setDisplayCopy("")
     setProductNameUsedInOriginalCopy("")
     setAiSuggestedSellingPoints([]) // Clear suggested selling points on image change
+    setPlatformResults({})
 
     if (file) {
       setIsLoading(true) // Set loading state when image is being processed
@@ -113,13 +154,22 @@ export default function Home() {
               image: base64Image,
               tone, // Use current tone for initial analysis
               customPoint, // Use current customPoint for initial analysis
+              platforms: selectedPlatforms, // Include selected platforms
             }),
           })
-          const data: { text: string; product_name?: string; selling_points?: string[] } = await response.json()
+          const data: { text?: string; product_name?: string; selling_points?: string[]; platform_results?: {[key: string]: string} } = await response.json()
           if (data.product_name) {
             setInput(data.product_name) // Populate input with AI-detected name immediately
             if (data.selling_points) {
               setAiSuggestedSellingPoints(data.selling_points) // Set AI suggested selling points
+            }
+            if (data.platform_results) {
+              setPlatformResults(data.platform_results)
+              // Set original and display copy to the first platform result for editing purposes
+              const firstPlatformResult = Object.values(data.platform_results)[0] || ""
+              setOriginalCopy(firstPlatformResult)
+              setDisplayCopy(firstPlatformResult)
+              setProductNameUsedInOriginalCopy(data.product_name)
             }
             // Note: Full copy generation with originalCopy/displayCopy will happen on handleGenerate
           } else {
@@ -138,14 +188,13 @@ export default function Home() {
   }
 
   const handleUpdateProductNameInCopy = () => {
-    if (!input || !originalCopy || !productNameUsedInOriginalCopy) {
-      console.error("Missing input, originalCopy, or productNameUsedInOriginalCopy");
+    if (!input || (!originalCopy && Object.keys(platformResults).length === 0) || !productNameUsedInOriginalCopy) {
+      console.error("Missing input, originalCopy/platformResults, or productNameUsedInOriginalCopy");
       alert("請先生成文案並確認商品名稱")
       return;
     }
 
     console.log("Updating product name in copy...");
-    console.log("Original copy:", originalCopy);
     console.log("Product name used in original copy:", productNameUsedInOriginalCopy);
     console.log("New product name (from input):", input);
 
@@ -153,10 +202,28 @@ export default function Home() {
     // Escape special characters in productNameUsedInOriginalCopy to be used in regex
     const escapedProductName = productNameUsedInOriginalCopy.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\$&');
     const regex = new RegExp(escapedProductName, 'g');
-    const updatedCopy = originalCopy.replace(regex, input);
 
-    console.log("Updated copy:", updatedCopy);
-    setDisplayCopy(updatedCopy);
+    // Update platform results if they exist
+    if (Object.keys(platformResults).length > 0) {
+      const updatedPlatformResults: {[key: string]: string} = {};
+      Object.entries(platformResults).forEach(([platform, text]) => {
+        updatedPlatformResults[platform] = text.replace(regex, input);
+        console.log(`Updated ${platform} copy:`, updatedPlatformResults[platform]);
+      });
+      setPlatformResults(updatedPlatformResults);
+      
+      // Also update the first platform result for backward compatibility
+      const firstPlatformResult = Object.values(updatedPlatformResults)[0] || "";
+      setOriginalCopy(firstPlatformResult);
+      setDisplayCopy(firstPlatformResult);
+    } else if (originalCopy) {
+      // Fallback for single copy
+      const updatedCopy = originalCopy.replace(regex, input);
+      console.log("Updated copy:", updatedCopy);
+      setDisplayCopy(updatedCopy);
+      setOriginalCopy(updatedCopy);
+    }
+
     setProductNameUsedInOriginalCopy(input); // Update the tracker to the new product name for future edits
   }
 
@@ -167,25 +234,26 @@ export default function Home() {
     });
   };
 
-  const handleCopyToClipboard = async () => {
-    const textToCopy = displayCopy || output
-    if (!textToCopy) return
+  const handleCopyToClipboard = async (text: string, platformId?: string) => {
+    if (!text) return
+
+    const key = platformId || 'single'
 
     try {
-      await navigator.clipboard.writeText(textToCopy)
-      setIsCopied(true)
-      setTimeout(() => setIsCopied(false), 2000) // Reset after 2 seconds
+      await navigator.clipboard.writeText(text)
+      setCopiedStates(prev => ({ ...prev, [key]: true }))
+      setTimeout(() => setCopiedStates(prev => ({ ...prev, [key]: false })), 2000) // Reset after 2 seconds
     } catch (err) {
       console.error('Failed to copy text: ', err)
       // Fallback for older browsers
       const textArea = document.createElement('textarea')
-      textArea.value = textToCopy
+      textArea.value = text
       document.body.appendChild(textArea)
       textArea.select()
       document.execCommand('copy')
       document.body.removeChild(textArea)
-      setIsCopied(true)
-      setTimeout(() => setIsCopied(false), 2000)
+      setCopiedStates(prev => ({ ...prev, [key]: true }))
+      setTimeout(() => setCopiedStates(prev => ({ ...prev, [key]: false })), 2000)
     }
   }
 
@@ -393,6 +461,68 @@ export default function Home() {
                   </div>
                 )}
               </div>
+              <div className="grid gap-2">
+                <Label 
+                  style={{
+                    fontFamily: 'Noto Sans TC',
+                    fontSize: '14px',
+                    fontWeight: 400,
+                    lineHeight: '16.8px',
+                    color: '#000000'
+                  }}
+                >
+                  應用平台
+                </Label>
+                <div className="grid grid-cols-2 gap-3">
+                  {platforms.map((platform) => (
+                    <div 
+                      key={platform.id}
+                      className="flex items-center gap-3"
+                      style={{ padding: '0px 24px 24px 0px' }}
+                    >
+                      <div 
+                        className="flex items-center gap-3 cursor-pointer"
+                        onClick={() => handlePlatformChange(platform.id)}
+                      >
+                        <div
+                          style={{
+                            width: '20px',
+                            height: '20px',
+                            border: '0.5px solid rgba(180, 201, 207, 0.3)',
+                            borderRadius: '6px',
+                            backgroundColor: selectedPlatforms.includes(platform.id) ? '#4554E5' : '#FFFFFF',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center'
+                          }}
+                        >
+                          {selectedPlatforms.includes(platform.id) && (
+                            <div
+                              style={{
+                                width: '8px',
+                                height: '8px',
+                                backgroundColor: '#FFFFFF',
+                                borderRadius: '2px'
+                              }}
+                            />
+                          )}
+                        </div>
+                        <span
+                          style={{
+                            fontFamily: 'Nunito Sans',
+                            fontSize: '14px',
+                            fontWeight: 400,
+                            lineHeight: '19.1px',
+                            color: '#000000'
+                          }}
+                        >
+                          {platform.label}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
           </div>
 
@@ -436,64 +566,157 @@ export default function Home() {
             padding: '24px'
           }}
         >
-          {(output || displayCopy) ? (
-            <Card className="max-w-4xl w-full" style={{ 
-              backgroundColor: 'rgba(255, 255, 255, 0.95)',
+          {(output || displayCopy || Object.keys(platformResults).length > 0) ? (
+            <div className="w-full" style={{ 
               maxHeight: '600px',
-              height: 'auto'
+              overflowY: 'auto'
             }}>
-              <CardHeader style={{ paddingBottom: '12px' }}>
-                <CardTitle 
-                  style={{
-                    fontFamily: 'Inter',
-                    fontSize: '20px',
-                    fontWeight: 600,
-                    color: '#1C1C1C'
-                  }}
-                >
-                  生成結果
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <Textarea
-                  value={displayCopy || output}
-                  readOnly
-                  className="resize-none"
-                  style={{
-                    fontFamily: 'Inter',
-                    fontSize: '16px',
-                    lineHeight: '1.5',
-                    backgroundColor: '#F8F9FA',
-                    border: '1px solid #E5E7EB',
-                    borderRadius: '8px',
-                    padding: '16px',
-                    minHeight: '300px',
-                    maxHeight: '450px'
-                  }}
-                />
-                <div className="flex justify-center mt-4">
-                  <Button
-                    onClick={handleCopyToClipboard}
-                    disabled={!displayCopy && !output}
-                    className="flex items-center gap-2"
-                    style={{
-                      backgroundColor: isCopied ? '#10B981' : '#4554E5',
-                      color: '#FFFFFF',
-                      border: 'none',
-                      borderRadius: '8px',
-                      padding: '8px 16px',
-                      fontFamily: 'Inter',
-                      fontSize: '14px',
-                      fontWeight: 500,
-                      transition: 'background-color 0.2s'
-                    }}
-                  >
-                    {isCopied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-                    {isCopied ? '已複製' : '複製文案'}
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
+              <div style={{
+                fontFamily: 'Noto Sans TC',
+                fontSize: '28px',
+                fontWeight: 400,
+                lineHeight: '1.2em',
+                color: '#FFFFFF',
+                marginBottom: '10px'
+              }}>
+                生成結果
+              </div>
+              <div className="flex flex-wrap gap-3">
+                {Object.keys(platformResults).length > 0 ? (
+                  // Multi-platform results - arrange in grid
+                  Object.entries(platformResults).map(([platform, text]) => (
+                    <Card key={platform} style={{ 
+                      backgroundColor: '#FFFFFF',
+                      border: '0.5px solid #CDCDDF',
+                      borderRadius: '6px',
+                      boxShadow: 'none',
+                      width: Object.keys(platformResults).length === 1 ? '100%' : 
+                             Object.keys(platformResults).length === 2 ? 'calc(50% - 6px)' : 
+                             'calc(33.333% - 8px)',
+                      minWidth: '280px'
+                    }}>
+                      <CardHeader style={{ padding: '16px 16px 12px 16px' }}>
+                        <CardTitle 
+                          style={{
+                            fontFamily: 'Noto Sans TC',
+                            fontSize: '14px',
+                            fontWeight: 400,
+                            color: '#000000',
+                            margin: 0
+                          }}
+                        >
+                          {platform === 'instagram' ? 'Instagram' : 
+                           platform === 'facebook' ? 'Facebook' : 
+                           platform === '電商網站' ? '網站平台' : platform}
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent style={{ padding: '0 16px 16px 16px' }}>
+                        <Textarea
+                          value={text}
+                          readOnly
+                          className="resize-none"
+                          style={{
+                            fontFamily: 'Inter',
+                            fontSize: '16px',
+                            lineHeight: '1.5',
+                            backgroundColor: 'rgba(255, 255, 255, 0.7)',
+                            border: '0.5px solid rgba(180, 201, 207, 0.5)',
+                            borderRadius: '6px',
+                            padding: '10px',
+                            minHeight: '400px',
+                            maxHeight: '500px'
+                          }}
+                        />
+                        <div className="flex justify-end mt-4">
+                          <Button
+                            onClick={(e) => { e.stopPropagation(); handleCopyToClipboard(text, platform) }}
+                            disabled={!text}
+                            className="flex items-center gap-2"
+                            style={{
+                              backgroundColor: '#4554E5',
+                              color: '#FFFFFF',
+                              border: '1px solid #CBD0DC',
+                              borderRadius: '6px',
+                              padding: '8px 16px',
+                              fontFamily: 'Inter',
+                              fontSize: '14px',
+                              fontWeight: 500,
+                              transition: 'background-color 0.2s'
+                            }}
+                          >
+                            {copiedStates[platform] ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                            複製文案
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))
+                ) : (
+                  // Single result (backward compatibility)
+                  <Card style={{ 
+                    backgroundColor: '#FFFFFF',
+                    border: '0.5px solid #CDCDDF',
+                    borderRadius: '6px',
+                    height: 'auto',
+                    boxShadow: 'none',
+                    width: '100%'
+                  }}>
+                    <CardHeader style={{ padding: '16px 16px 12px 16px' }}>
+                      <CardTitle 
+                        style={{
+                          fontFamily: 'Inter',
+                          fontSize: '20px',
+                          fontWeight: 600,
+                          color: '#1C1C1C',
+                          margin: 0
+                        }}
+                      >
+                        生成結果
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent style={{ padding: '0 16px 16px 16px' }}>
+                      <Textarea
+                        value={displayCopy || output}
+                        readOnly
+                        className="resize-none"
+                        style={{
+                          fontFamily: 'Inter',
+                          fontSize: '16px',
+                          lineHeight: '1.5',
+                          backgroundColor: 'rgba(255, 255, 255, 0.7)',
+                          border: '0.5px solid rgba(180, 201, 207, 0.5)',
+                          borderRadius: '6px',
+                          padding: '10px',
+                          minHeight: '450px',
+                          maxHeight: '600px'
+                        }}
+                      />
+                      <div className="flex justify-end mt-4">
+                        <Button
+                          onClick={(e) => { e.stopPropagation(); handleCopyToClipboard(displayCopy || output) }}
+                          disabled={!displayCopy && !output}
+                          className="flex items-center gap-2"
+                          style={{
+                            backgroundColor: '#4554E5',
+                            color: '#FFFFFF',
+                            border: '1px solid #CBD0DC',
+                            borderRadius: '6px',
+                            padding: '8px 16px',
+                            fontFamily: 'Inter',
+                            fontSize: '14px',
+                            fontWeight: 500,
+                            transition: 'background-color 0.2s'
+                          }}
+                        >
+                          {copiedStates['single'] ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                          複製文案
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+              </div>
+            </div>
           ) : (
             <div 
               className="flex items-center justify-center max-w-4xl w-full"
