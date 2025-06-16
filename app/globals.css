@@ -170,4 +170,28 @@
   [role="combobox"]:focus {
     background-color: #FFFFFF !important;
   }
+  
+  /* 誇張的閃爍動畫 */
+  @keyframes dramatic-blink {
+    0%, 100% { 
+      opacity: 1; 
+      transform: scale(1);
+    }
+    25% { 
+      opacity: 0.3; 
+      transform: scale(0.95);
+    }
+    50% { 
+      opacity: 1; 
+      transform: scale(1.1);
+    }
+    75% { 
+      opacity: 0.4; 
+      transform: scale(0.9);
+    }
+  }
+  
+  .animate-dramatic-blink {
+    animation: dramatic-blink 2s ease-in-out infinite;
+  }
 }

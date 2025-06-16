@@ -8,12 +8,13 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
 
 export async function POST(req: Request) {
   try {
-    const { item, tone, image, customPoint, platforms }: {
+    const { item, tone, image, customPoint, platforms, analyzeOnly }: {
       item?: string; // Optional: if an item name is directly provided (without image)
-      tone: "搞笑" | "專業" | "簡潔";
+      tone?: "搞笑" | "專業" | "簡潔";
       image?: string; // Optional: base64 image data
       customPoint?: string; // Optional: user-provided product selling point
       platforms?: string[]; // Optional: selected platforms for generation
+      analyzeOnly?: boolean; // Optional: only analyze image without generating copy
     } = await req.json()
 
     let identifiedProductName: string = item || "" // Initialize with provided item or empty string
@@ -89,6 +90,14 @@ export async function POST(req: Request) {
 
       if (!identifiedProductName) {
         return NextResponse.json({ text: "無法辨識圖片中的產品名稱，請稍後再試或手動輸入關鍵字。" }, { status: 400 })
+      }
+
+      // If analyzeOnly is true, return only the analysis results
+      if (analyzeOnly) {
+        return NextResponse.json({ 
+          product_name: identifiedProductName, 
+          selling_points: identifiedSellingPoints 
+        })
       }
     }
 

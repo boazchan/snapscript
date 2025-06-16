@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -24,13 +24,52 @@ export default function Home() {
   const [copiedStates, setCopiedStates] = useState<{[key: string]: boolean}>({}) // State for copy button feedback per platform
   const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>(["全部"])
   const [platformResults, setPlatformResults] = useState<{[key: string]: string}>({})
+  const [loadingDots, setLoadingDots] = useState("")
+  const [isAnalyzingImage, setIsAnalyzingImage] = useState(false)
+  const [analyzingDots, setAnalyzingDots] = useState("")
 
   const platforms = [
     { id: "全部", label: "全部" },
-    { id: "instagram", label: "Instagram" }, 
-    { id: "facebook", label: "facebook" },
+    { id: "facebook", label: "facebook" }, 
+    { id: "instagram", label: "Instagram" },
     { id: "電商網站", label: "網站平台" }
   ]
+
+  // 動態點點效果 - 文案生成
+  useEffect(() => {
+    if (isLoading) {
+      const interval = setInterval(() => {
+        setLoadingDots(prev => {
+          if (prev === "") return "."
+          if (prev === ".") return ".."
+          if (prev === "..") return "..."
+          return ""
+        })
+      }, 500) // 每500毫秒更新一次
+
+      return () => clearInterval(interval)
+    } else {
+      setLoadingDots("")
+    }
+  }, [isLoading])
+
+  // 動態點點效果 - 圖片分析
+  useEffect(() => {
+    if (isAnalyzingImage) {
+      const interval = setInterval(() => {
+        setAnalyzingDots((prev: string) => {
+          if (prev === "") return "."
+          if (prev === ".") return ".."
+          if (prev === "..") return "..."
+          return ""
+        })
+      }, 500) // 每500毫秒更新一次
+
+      return () => clearInterval(interval)
+    } else {
+      setAnalyzingDots("")
+    }
+  }, [isAnalyzingImage])
 
   const handlePlatformChange = (platformId: string) => {
     if (platformId === "全部") {
@@ -142,7 +181,7 @@ export default function Home() {
     setPlatformResults({})
 
     if (file) {
-      setIsLoading(true) // Set loading state when image is being processed
+      setIsAnalyzingImage(true) // Set analyzing state when image is being processed
       const reader = new FileReader()
       reader.onload = async (e) => {
         const base64Image = e.target?.result as string
@@ -152,26 +191,15 @@ export default function Home() {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
               image: base64Image,
-              tone, // Use current tone for initial analysis
-              customPoint, // Use current customPoint for initial analysis
-              platforms: selectedPlatforms, // Include selected platforms
+              analyzeOnly: true, // 只進行分析，不生成文案
             }),
           })
-          const data: { text?: string; product_name?: string; selling_points?: string[]; platform_results?: {[key: string]: string} } = await response.json()
+          const data: { text?: string; product_name?: string; selling_points?: string[] } = await response.json()
           if (data.product_name) {
             setInput(data.product_name) // Populate input with AI-detected name immediately
             if (data.selling_points) {
               setAiSuggestedSellingPoints(data.selling_points) // Set AI suggested selling points
             }
-            if (data.platform_results) {
-              setPlatformResults(data.platform_results)
-              // Set original and display copy to the first platform result for editing purposes
-              const firstPlatformResult = Object.values(data.platform_results)[0] || ""
-              setOriginalCopy(firstPlatformResult)
-              setDisplayCopy(firstPlatformResult)
-              setProductNameUsedInOriginalCopy(data.product_name)
-            }
-            // Note: Full copy generation with originalCopy/displayCopy will happen on handleGenerate
           } else {
             // Handle cases where product_name is not returned (e.g., error or no clear product)
             setOutput(data.text || "AI 辨識商品名稱失敗，請手動輸入。")
@@ -180,7 +208,7 @@ export default function Home() {
           console.error("Error during image analysis:", error)
           setOutput("圖片分析失敗，請稍後再試或手動輸入商品名稱。")
         } finally {
-          setIsLoading(false) // Clear loading state after processing
+          setIsAnalyzingImage(false) // Clear analyzing state after processing
         }
       }
       reader.readAsDataURL(file)
@@ -337,7 +365,7 @@ export default function Home() {
                 <Label 
                   htmlFor="input"
                   style={{
-                    fontFamily: 'Noto Sans TC',
+                    fontFamily: 'Inter',
                     fontSize: '14px',
                     fontWeight: 400,
                     lineHeight: '16.8px',
@@ -351,18 +379,19 @@ export default function Home() {
                     id="input"
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
-                    placeholder={currentImageFile ? "AI辨識中..." : "請輸入"}
-                    disabled={isLoading}
-                    className={originalCopy && input !== productNameUsedInOriginalCopy ? "flex-grow" : "w-full"}
+                    placeholder={isAnalyzingImage ? `AI辨識中${analyzingDots}` : "請輸入"}
+                    disabled={isAnalyzingImage}
+                    className={`${originalCopy && input !== productNameUsedInOriginalCopy ? "flex-grow" : "w-full"} ${isAnalyzingImage ? 'animate-pulse' : ''}`}
                     style={{
-                      backgroundColor: '#FFFFFF',
-                      border: '0.5px solid rgba(180, 201, 207, 0.5)',
+                      backgroundColor: isAnalyzingImage ? '#F0F8FF' : '#FFFFFF',
+                      border: isAnalyzingImage ? '2px solid #4554E5' : '0.5px solid rgba(180, 201, 207, 0.5)',
                       borderRadius: '6px',
                       padding: '10px',
                       height: '48px',
-                      fontFamily: 'Nunito Sans',
+                      fontFamily: 'Inter',
                       fontSize: '14px',
-                      color: '#000000'
+                      color: isAnalyzingImage ? '#4554E5' : '#000000',
+                      fontWeight: isAnalyzingImage ? 600 : 400
                     }}
                   />
                   {originalCopy && input !== productNameUsedInOriginalCopy && input.trim() !== '' && (
@@ -383,7 +412,7 @@ export default function Home() {
                 <Label 
                   htmlFor="tone"
                   style={{
-                    fontFamily: 'Nunito Sans',
+                    fontFamily: 'Inter',
                     fontSize: '14px',
                     fontWeight: 400,
                     lineHeight: '19.1px',
@@ -401,7 +430,7 @@ export default function Home() {
                       padding: '10px',
                       width: '265px',
                       height: '48px',
-                      fontFamily: 'Nunito Sans',
+                      fontFamily: 'Inter',
                       fontSize: '14px',
                       color: '#000000'
                     }}
@@ -419,7 +448,7 @@ export default function Home() {
                 <Label 
                   htmlFor="customPoint"
                   style={{
-                    fontFamily: 'Noto Sans TC',
+                    fontFamily: 'Inter',
                     fontSize: '14px',
                     fontWeight: 400,
                     lineHeight: '16.8px',
@@ -440,7 +469,7 @@ export default function Home() {
                     borderRadius: '6px',
                     padding: '10px',
                     height: '48px',
-                    fontFamily: 'Nunito Sans',
+                    fontFamily: 'Inter',
                     fontSize: '14px',
                     color: '#000000'
                   }}
@@ -464,7 +493,7 @@ export default function Home() {
               <div className="grid gap-2">
                 <Label 
                   style={{
-                    fontFamily: 'Noto Sans TC',
+                    fontFamily: 'Inter',
                     fontSize: '14px',
                     fontWeight: 400,
                     lineHeight: '16.8px',
@@ -473,7 +502,7 @@ export default function Home() {
                 >
                   應用平台
                 </Label>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="flex flex-row">
                   {platforms.map((platform) => (
                     <div 
                       key={platform.id}
@@ -509,7 +538,7 @@ export default function Home() {
                         </div>
                         <span
                           style={{
-                            fontFamily: 'Nunito Sans',
+                            fontFamily: 'Inter',
                             fontSize: '14px',
                             fontWeight: 400,
                             lineHeight: '19.1px',
@@ -542,7 +571,7 @@ export default function Home() {
           >
             <Button 
               onClick={handleGenerate} 
-              disabled={isLoading || (!input && !currentImageFile)}
+              disabled={isLoading || isAnalyzingImage || (!input && !currentImageFile)}
               style={{
                 backgroundColor: '#4554E5',
                 borderRadius: '32px',
@@ -551,206 +580,69 @@ export default function Home() {
                 fontSize: '18px',
                 fontWeight: 500,
                 lineHeight: '21.78px',
-                color: '#FFFFFF'
+                color: '#FFFFFF',
+                width: '200px',
+                minWidth: '200px'
               }}
             >
-              {isLoading ? "生成中..." : "開始生成"}
+              {(isLoading && !isAnalyzingImage) ? `生成中${loadingDots}` : "開始生成"}
             </Button>
           </div>
         </div>
 
-        {/* Right Result Area */}
-        <div 
-          className="flex-grow flex flex-col"
-          style={{
-            padding: '24px'
-          }}
-        >
-          {(output || displayCopy || Object.keys(platformResults).length > 0) ? (
-            <div className="w-full" style={{ 
-              maxHeight: '600px',
-              overflowY: 'auto'
-            }}>
-              <div style={{
-                fontFamily: 'Noto Sans TC',
-                fontSize: '28px',
-                fontWeight: 400,
-                lineHeight: '1.2em',
-                color: '#FFFFFF',
-                marginBottom: '10px'
-              }}>
-                生成結果
-              </div>
-              <div className="flex flex-wrap gap-3">
-                {Object.keys(platformResults).length > 0 ? (
-                  // Multi-platform results - arrange in grid
-                  Object.entries(platformResults).map(([platform, text]) => (
-                    <Card key={platform} style={{ 
-                      backgroundColor: '#FFFFFF',
-                      border: '0.5px solid #CDCDDF',
-                      borderRadius: '6px',
-                      boxShadow: 'none',
-                      width: Object.keys(platformResults).length === 1 ? '100%' : 
-                             Object.keys(platformResults).length === 2 ? 'calc(50% - 6px)' : 
-                             'calc(33.333% - 8px)',
-                      minWidth: '280px'
-                    }}>
-                      <CardHeader style={{ padding: '16px 16px 12px 16px' }}>
-                        <CardTitle 
-                          style={{
-                            fontFamily: 'Noto Sans TC',
-                            fontSize: '14px',
-                            fontWeight: 400,
-                            color: '#000000',
-                            margin: 0
-                          }}
-                        >
-                          {platform === 'instagram' ? 'Instagram' : 
-                           platform === 'facebook' ? 'Facebook' : 
-                           platform === '電商網站' ? '網站平台' : platform}
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent style={{ padding: '0 16px 16px 16px' }}>
-                        <Textarea
-                          value={text}
-                          readOnly
-                          className="resize-none"
-                          style={{
-                            fontFamily: 'Inter',
-                            fontSize: '16px',
-                            lineHeight: '1.5',
-                            backgroundColor: 'rgba(255, 255, 255, 0.7)',
-                            border: '0.5px solid rgba(180, 201, 207, 0.5)',
-                            borderRadius: '6px',
-                            padding: '10px',
-                            minHeight: '400px',
-                            maxHeight: '500px'
-                          }}
-                        />
-                        <div className="flex justify-end mt-4">
-                          <Button
-                            onClick={(e) => { e.stopPropagation(); handleCopyToClipboard(text, platform) }}
-                            disabled={!text}
-                            className="flex items-center gap-2"
-                            style={{
-                              backgroundColor: '#4554E5',
-                              color: '#FFFFFF',
-                              border: '1px solid #CBD0DC',
-                              borderRadius: '6px',
-                              padding: '8px 16px',
-                              fontFamily: 'Inter',
-                              fontSize: '14px',
-                              fontWeight: 500,
-                              transition: 'background-color 0.2s'
-                            }}
-                          >
-                            {copiedStates[platform] ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-                            複製文案
-                          </Button>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))
-                ) : (
-                  // Single result (backward compatibility)
-                  <Card style={{ 
-                    backgroundColor: '#FFFFFF',
-                    border: '0.5px solid #CDCDDF',
-                    borderRadius: '6px',
-                    height: 'auto',
-                    boxShadow: 'none',
-                    width: '100%'
-                  }}>
-                    <CardHeader style={{ padding: '16px 16px 12px 16px' }}>
-                      <CardTitle 
-                        style={{
-                          fontFamily: 'Inter',
-                          fontSize: '20px',
-                          fontWeight: 600,
-                          color: '#1C1C1C',
-                          margin: 0
-                        }}
-                      >
-                        生成結果
+        {/* Right Content Area */}
+        <div className="flex-1 flex justify-center items-center">
+          {Object.keys(platformResults).length > 0 ? (
+            <div className="w-full max-w-5xl px-6 -mt-24">
+              <h2 className="text-2xl font-semibold text-white mb-6">生成結果</h2>
+              <div className="grid grid-cols-3 gap-4">
+                {Object.entries(platformResults).map(([platform, text]) => (
+                  <Card key={platform} className="bg-white shadow-lg">
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-lg font-medium">
+                        {platform === 'instagram' ? 'Instagram' : 
+                         platform === 'facebook' ? 'Facebook' : 
+                         platform === '電商網站' ? '電商網站' : platform}
                       </CardTitle>
                     </CardHeader>
-                    <CardContent style={{ padding: '0 16px 16px 16px' }}>
-                      <Textarea
-                        value={displayCopy || output}
-                        readOnly
-                        className="resize-none"
-                        style={{
-                          fontFamily: 'Inter',
-                          fontSize: '16px',
-                          lineHeight: '1.5',
-                          backgroundColor: 'rgba(255, 255, 255, 0.7)',
-                          border: '0.5px solid rgba(180, 201, 207, 0.5)',
-                          borderRadius: '6px',
-                          padding: '10px',
-                          minHeight: '450px',
-                          maxHeight: '600px'
-                        }}
-                      />
-                      <div className="flex justify-end mt-4">
+                    <CardContent className="space-y-2 pt-0 pb-4">
+                      <div 
+                        className="bg-gray-50 p-4 rounded border whitespace-pre-wrap text-sm"
+                        style={{ height: '400px', overflowY: 'auto' }}
+                      >
+                        {text}
+                      </div>
+                      <div className="flex justify-end">
                         <Button
-                          onClick={(e) => { e.stopPropagation(); handleCopyToClipboard(displayCopy || output) }}
-                          disabled={!displayCopy && !output}
+                          onClick={(e) => { e.stopPropagation(); handleCopyToClipboard(text, platform) }}
+                          disabled={!text}
                           className="flex items-center gap-2"
                           style={{
-                            backgroundColor: '#4554E5',
-                            color: '#FFFFFF',
-                            border: '1px solid #CBD0DC',
-                            borderRadius: '6px',
-                            padding: '8px 16px',
-                            fontFamily: 'Inter',
-                            fontSize: '14px',
-                            fontWeight: 500,
-                            transition: 'background-color 0.2s'
+                            backgroundColor: copiedStates[platform] ? '#10B981' : '#3B82F6',
+                            color: 'white'
                           }}
                         >
-                          {copiedStates['single'] ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-                          複製文案
+                          {copiedStates[platform] ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                          {copiedStates[platform] ? '已複製' : '複製文案'}
                         </Button>
                       </div>
                     </CardContent>
                   </Card>
-                )}
+                ))}
               </div>
             </div>
           ) : (
-            <div 
-              className="flex items-center justify-center max-w-4xl w-full"
-              style={{
-                border: '2px dashed rgba(229, 231, 235, 0.8)',
-                borderRadius: '12px',
-                backgroundColor: 'rgba(248, 249, 250, 0.8)',
-                maxHeight: '600px',
-                height: '400px'
-              }}
-            >
-              <div className="text-center">
-                <div 
-                  style={{
-                    fontFamily: 'Inter',
-                    fontSize: '18px',
-                    fontWeight: 500,
-                    color: '#6B7280',
-                    marginBottom: '8px'
-                  }}
-                >
-                  文案結果將顯示在這裡
-                </div>
-                <div 
-                  style={{
-                    fontFamily: 'Inter',
-                    fontSize: '14px',
-                    color: '#9CA3AF'
-                  }}
-                >
-                  請填寫左側表單並點擊「開始生成」
-                </div>
-              </div>
-            </div>
+            <Card className="w-full max-w-md mx-6" style={{ backgroundColor: 'rgba(255, 255, 255, 0.1)' }}>
+              <CardContent className="flex flex-col items-center justify-center py-12 text-center">
+                <Sparkles className={`h-12 w-12 text-white mb-4 ${(isLoading && !isAnalyzingImage) ? 'animate-dramatic-blink' : ''}`} />
+                <h3 className="text-xl font-medium text-white mb-2">
+                  {(isLoading && !isAnalyzingImage) ? `生成中${loadingDots}` : '文案結果將顯示在這裡'}
+                </h3>
+                <p className="text-white/80">
+                  {(isLoading && !isAnalyzingImage) ? '請稍候，AI正在為您生成文案' : '請填寫左側表單並點擊「開始生成」'}
+                </p>
+              </CardContent>
+            </Card>
           )}
         </div>
       </div>
