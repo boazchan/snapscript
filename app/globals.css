@@ -231,6 +231,30 @@
       transform: scale(1.08) rotate(2deg);
     }
   }
+  
+  /* 生成中的脈衝旋轉動畫 */
+  @keyframes generating-pulse {
+    0%, 100% {
+      transform: scale(1) rotate(0deg);
+      box-shadow: 0 0 0 0 rgba(146, 69, 229, 0.7);
+    }
+    25% {
+      transform: scale(1.05) rotate(90deg);
+      box-shadow: 0 0 0 10px rgba(146, 69, 229, 0.3);
+    }
+    50% {
+      transform: scale(1.1) rotate(180deg);
+      box-shadow: 0 0 0 15px rgba(146, 69, 229, 0.1);
+    }
+    75% {
+      transform: scale(1.05) rotate(270deg);
+      box-shadow: 0 0 0 10px rgba(146, 69, 229, 0.3);
+    }
+  }
+  
+  .generating-pulse {
+    animation: generating-pulse 2s ease-in-out infinite;
+  }
 }
 
 /* 響應式設計 - 桌面版優化 */
@@ -299,7 +323,7 @@
   /* 調整卡片高度 */
   .result-card {
     height: auto !important;
-    min-height: 400px !important;
+    min-height: 500px !important;
   }
 }
 
@@ -315,7 +339,7 @@
   }
   
   .result-card {
-    min-height: 350px !important;
+    min-height: 450px !important;
   }
 }
 

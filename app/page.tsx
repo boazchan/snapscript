@@ -772,30 +772,45 @@ export default function Home() {
                 gap: '16px'
               }}
             >
-              <h2 
-                style={{
-                  fontFamily: 'Inter',
-                  fontSize: '18px',
-                  fontWeight: 400,
-                  lineHeight: '21.78px',
-                  color: '#000000',
-                  textAlign: 'center'
-                }}
-              >
-                文案結果將顯示在這裡
-              </h2>
-              <p 
-                style={{
-                  fontFamily: 'Inter',
-                  fontSize: '14px',
-                  fontWeight: 400,
-                  lineHeight: '16.94px',
-                  color: 'rgba(0, 0, 0, 0.8)',
-                  textAlign: 'center'
-                }}
-              >
-                請填寫左側表單並點擊「開始生成」
-              </p>
+              {isLoading ? (
+                // 生成中狀態
+                <img 
+                  src="/typing.gif" 
+                  alt="正在生成"
+                  style={{
+                    width: '350px',
+                    height: 'auto'
+                  }}
+                />
+              ) : (
+                // 初始狀態
+                <>
+                  <h2 
+                    style={{
+                      fontFamily: 'Inter',
+                      fontSize: '18px',
+                      fontWeight: 400,
+                      lineHeight: '21.78px',
+                      color: '#000000',
+                      textAlign: 'center'
+                    }}
+                  >
+                    文案結果將顯示在這裡
+                  </h2>
+                  <p 
+                    style={{
+                      fontFamily: 'Inter',
+                      fontSize: '14px',
+                      fontWeight: 400,
+                      lineHeight: '16.94px',
+                      color: 'rgba(0, 0, 0, 0.8)',
+                      textAlign: 'center'
+                    }}
+                  >
+                    請填寫左側表單並點擊「開始生成」
+                  </p>
+                </>
+              )}
             </div>
           ) : (
             <>
@@ -833,7 +848,16 @@ export default function Home() {
                       overflow: 'hidden'
                     }}
                   >
-                  {Object.entries(platformResults).map(([platform, text]) => {
+                  {Object.entries(platformResults)
+                    .filter(([platform]) => {
+                      // 如果選擇了"全部"，顯示所有結果
+                      if (selectedPlatforms.includes("全部")) {
+                        return true;
+                      }
+                      // 否則只顯示選擇的平台
+                      return selectedPlatforms.includes(platform);
+                    })
+                    .map(([platform, text]) => {
                     // 平台圖標和標籤映射
                     const platformConfig = {
                       'facebook': { 
@@ -910,7 +934,7 @@ export default function Home() {
                           width: '100%',
                           maxWidth: '350px', // 最大寬度限制
                           minWidth: '280px', // 最小寬度保證
-                          height: 'clamp(500px, 60vh, 600px)', // 響應式高度
+                          height: 'clamp(600px, 70vh, 750px)', // 響應式高度 - 增加高度
                           backgroundColor: '#FFFFFF',
                           border: '0.5px solid #CDCDDF',
                           borderRadius: '16px',
