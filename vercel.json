@@ -6,8 +6,5 @@
     "app/api/generate/route.ts": {
       "maxDuration": 30
     }
-  },
-  "env": {
-    "GEMINI_API_KEY": "@gemini-api-key"
   }
 } 
