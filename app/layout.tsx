@@ -13,8 +13,20 @@ const geistMono = Geist_Mono({
 })
 
 export const metadata: Metadata = {
-  title: "SnapScript - 快速生成產品文案",
-  description: "SnapScript 是一個 AI 驱动的文案生成工具，幫助您快速創建產品描述和行銷文案。",
+  title: "SnapScript - AI 商品文案生成器",
+  description: "上傳商品圖片，AI 自動生成 Instagram、Facebook、電商網站專用文案。快速、專業、多平台適用。",
+  keywords: "AI文案, 商品文案, Instagram文案, Facebook文案, 電商文案, 圖片分析",
+  authors: [{ name: "SnapScript Team" }],
+  openGraph: {
+    title: "SnapScript - AI 商品文案生成器",
+    description: "上傳商品圖片，AI 自動生成專業文案",
+    type: "website",
+    locale: "zh_TW",
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
 }
 
 export default function RootLayout({

@@ -116,6 +116,11 @@
   * {
     @apply border-border outline-ring/50;
   }
+  html, body {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+  }
   body {
     @apply bg-background text-foreground;
   }
@@ -193,5 +198,204 @@
   
   .animate-dramatic-blink {
     animation: dramatic-blink 2s ease-in-out infinite;
+  }
+  
+  /* AI 辨識中的脈衝動畫 */
+  @keyframes ai-analyzing {
+    0%, 100% {
+      opacity: 1;
+      transform: scale(1);
+    }
+    50% {
+      opacity: 0.7;
+      transform: scale(1.02);
+    }
+  }
+  
+  .ai-analyzing {
+    animation: ai-analyzing 1.5s ease-in-out infinite;
+  }
+  
+  /* 星星閃閃動畫 */
+  @keyframes sparkle {
+    0%, 100% {
+      transform: scale(1) rotate(0deg);
+    }
+    25% {
+      transform: scale(1.1) rotate(5deg);
+    }
+    50% {
+      transform: scale(1.05) rotate(-3deg);
+    }
+    75% {
+      transform: scale(1.08) rotate(2deg);
+    }
+  }
+}
+
+/* 響應式設計 - 桌面版優化 */
+@media (max-width: 1600px) {
+  /* 大桌面螢幕 */
+  .main-content {
+    padding: 12px;
+    gap: 12px;
+  }
+}
+
+@media (max-width: 1400px) {
+  /* 中等桌面螢幕 */
+  .main-content {
+    padding: 8px;
+    gap: 8px;
+  }
+  
+  /* 調整卡片網格布局 */
+  .results-grid {
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)) !important;
+    gap: 16px !important;
+  }
+}
+
+@media (max-width: 1200px) {
+  /* 小桌面螢幕 */
+  .left-panel {
+    width: clamp(350px, 35vw, 450px) !important;
+  }
+  
+  .results-grid {
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)) !important;
+    gap: 12px !important;
+  }
+  
+  /* 調整標題字體大小 */
+  .results-title {
+    font-size: clamp(20px, 2.5vw, 28px) !important;
+  }
+}
+
+@media (max-width: 1024px) {
+  /* 小筆電螢幕 */
+  .main-content {
+    flex-direction: column !important;
+    padding: 16px !important;
+  }
+  
+  .left-panel {
+    width: 100% !important;
+    max-width: none !important;
+    margin-bottom: 16px;
+  }
+  
+  .right-panel {
+    width: 100% !important;
+    min-height: auto !important;
+  }
+  
+  .results-grid {
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)) !important;
+    gap: 16px !important;
+  }
+  
+  /* 調整卡片高度 */
+  .result-card {
+    height: auto !important;
+    min-height: 400px !important;
+  }
+}
+
+@media (max-width: 900px) {
+  /* 平板橫向 */
+  .left-panel {
+    padding: 12px !important;
+  }
+  
+  .results-grid {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 12px !important;
+  }
+  
+  .result-card {
+    min-height: 350px !important;
+  }
+}
+
+@media (max-width: 768px) {
+  /* 平板直向 */
+  .main-content {
+    padding: 12px !important;
+  }
+  
+  .left-panel {
+    padding: 16px !important;
+  }
+  
+  .results-grid {
+    grid-template-columns: 1fr !important;
+    gap: 16px !important;
+  }
+  
+  .result-card {
+    max-width: 100% !important;
+    margin: 0 !important;
+  }
+  
+  /* 調整按鈕和輸入框 */
+  .input-wrapper {
+    flex-direction: column !important;
+    gap: 8px !important;
+  }
+  
+  .input-wrapper input {
+    min-width: 100% !important;
+  }
+}
+
+/* 滾動條樣式優化 */
+.ai-suggestions::-webkit-scrollbar {
+  width: 4px;
+}
+
+.ai-suggestions::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 2px;
+}
+
+.ai-suggestions::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 2px;
+}
+
+.ai-suggestions::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
+
+/* Footer 響應式樣式 - 右下角固定位置 */
+footer {
+  transition: all 0.3s ease;
+}
+
+@media (max-width: 768px) {
+  footer {
+    bottom: 12px !important;
+    right: 12px !important;
+    padding: 6px 10px !important;
+  }
+  
+  footer p {
+    font-size: 11px !important;
+    line-height: 1.3 !important;
+  }
+}
+
+@media (max-width: 480px) {
+  footer {
+    bottom: 8px !important;
+    right: 8px !important;
+    padding: 5px 8px !important;
+  }
+  
+  footer p {
+    font-size: 10px !important;
+    letter-spacing: 0.2px !important;
   }
 }

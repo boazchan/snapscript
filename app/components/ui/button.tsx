@@ -17,13 +17,13 @@ const buttonVariants = ({
 
   switch (variant) {
     case "default":
-      variantClasses = "bg-primary text-primary-foreground shadow hover:bg-primary/90";
+      variantClasses = "bg-primary text-primary-foreground hover:bg-primary/90";
       break;
     case "outline":
-      variantClasses = "border border-input bg-background shadow-sm hover:bg-accent hover:text-accent-foreground";
+      variantClasses = "border border-input bg-background hover:bg-accent hover:text-accent-foreground";
       break;
     case "secondary":
-      variantClasses = "bg-secondary text-secondary-foreground shadow-sm hover:bg-secondary/80";
+      variantClasses = "bg-secondary text-secondary-foreground hover:bg-secondary/80";
       break;
     case "ghost":
       variantClasses = "hover:bg-accent hover:text-accent-foreground";
@@ -32,7 +32,7 @@ const buttonVariants = ({
       variantClasses = "text-primary underline-offset-4 hover:underline";
       break;
     default:
-      variantClasses = "bg-primary text-primary-foreground shadow hover:bg-primary/90";
+      variantClasses = "bg-primary text-primary-foreground hover:bg-primary/90";
       break;
   }
 
