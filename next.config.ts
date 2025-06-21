@@ -8,22 +8,13 @@ const nextConfig: NextConfig = {
     ignoreBuildErrors: true,
   },
   images: {
-    unoptimized: true
-  },
-  
-  // 圖片優化
-  images: {
+    unoptimized: true,
     domains: ['localhost'],
     formats: ['image/webp', 'image/avif'],
   },
   
   // 壓縮
   compress: true,
-  
-  // 實驗性功能
-  experimental: {
-    optimizeCss: true,
-  },
   
   // Headers 設定
   async headers() {
