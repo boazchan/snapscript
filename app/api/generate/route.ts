@@ -307,12 +307,14 @@ export async function POST(req: Request) {
     }
     
     // Remove "限時優惠" from identifiedSellingPoints since it's only for suggestion, not auto-inclusion
-    allSellingPoints = allSellingPoints.filter(point => point !== "限時優惠");
-    
-    // Only add "限時優惠" back if it was explicitly selected by user in customPoint
-    if (sanitizedCustomPoint && sanitizedCustomPoint.includes("限時優惠")) {
-      allSellingPoints.push("限時優惠");
-    }
+    // But keep it if it was explicitly selected by user in customPoint
+    allSellingPoints = allSellingPoints.filter(point => {
+      if (point === "限時優惠") {
+        // Keep "限時優惠" only if it was explicitly selected by user
+        return sanitizedCustomPoint && sanitizedCustomPoint.includes("限時優惠");
+      }
+      return true;
+    });
 
     // Security: Limit total selling points
     allSellingPoints = allSellingPoints.slice(0, 15);
