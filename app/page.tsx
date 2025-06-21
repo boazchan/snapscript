@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import ImageUpload from "@/components/ImageUpload"
+import Header from "@/components/Header"
 import { Camera, Sparkles, Copy, Check } from "lucide-react"
 
 export default function Home() {
@@ -286,366 +287,430 @@ export default function Home() {
   }
 
   return (
-    <main 
-      className="min-h-screen relative flex flex-col"
+    <div 
+      className="min-h-screen"
       style={{
-        backgroundImage: 'url(/background.png)',
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
-        backgroundRepeat: 'no-repeat',
-        backgroundAttachment: 'fixed'
+        width: '1440px',
+        height: '1024px',
+        position: 'relative'
       }}
     >
-      {/* Header */}
+      {/* Background */}
       <div 
-        className="w-full flex flex-col justify-center"
         style={{
-          height: '56px',
-          backgroundColor: '#FFFFFF',
-          boxShadow: '0px 4px 4px 0px rgba(194, 194, 194, 0.25)',
-          padding: '10px 16px',
-          gap: '10px',
-          position: 'relative',
-          zIndex: 10
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          width: '1600px',
+          height: '1200px',
+          backgroundImage: 'url(/background.png)',
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          opacity: 0.2
         }}
-      >
-        <div className="flex flex-row items-center" style={{ gap: '14px', width: '100%' }}>
-          <h1 
-            style={{ 
-              fontFamily: 'Inter',
-              fontSize: '20px',
-              fontWeight: 400,
-              lineHeight: '24.2px',
-              color: '#1C1C1C'
-            }}
-          >
-            SnapScript Beta
-          </h1>
-          <h2 
-            style={{ 
-              fontFamily: 'Inter',
-              fontSize: '14px',
-              fontWeight: 400,
-              lineHeight: '16.94px',
-              color: '#1C1C1C'
-            }}
-          >
-            文案生成
-          </h2>
-        </div>
-      </div>
+      />
+      
+      {/* Gradient Overlay */}
+      <div 
+        style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          width: '1440px',
+          height: '1024px',
+          background: 'linear-gradient(135deg, rgba(82, 132, 247, 0.1) 0%, rgba(208, 78, 231, 0.1) 100%)'
+        }}
+      />
 
-      {/* Main Content Area - Left and Right Layout */}
-      <div className="flex flex-row" style={{ height: 'calc(100vh - 56px)' }}>
-        {/* Left Operation Area */}
+      {/* Main Content */}
+      <div className="flex" style={{ position: 'relative', zIndex: 1 }}>
+        {/* Left Panel */}
         <div 
-          className="flex flex-col"
           style={{
-            width: '516px',
-            height: '100%',
-            position: 'relative',
-            zIndex: 1
+            width: '456px',
+            height: '1024px',
+            backgroundColor: '#F7F8FA',
+            border: '1px solid #EEF0F2',
+            borderRadius: '16px',
+            margin: '16px',
+            padding: '16px',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '16px'
           }}
         >
-          <div 
-            className="flex-grow"
-            style={{
-              background: '#F0F1FD',
-              borderLeft: '0.5px solid #CDCDDF',
-              borderRadius: '0px',
-              padding: '16px'
-            }}
-          >
-            <div className="flex flex-col" style={{ 
-              width: '484px',
-              gap: '14px'
-            }}>
+          {/* Header */}
+          <Header />
+          
+          {/* Form Content */}
+          <div style={{ 
+            display: 'flex', 
+            flexDirection: 'column',
+            gap: '14px',
+            flex: 1
+          }}>
+            {/* Image Upload */}
+            <div 
+              style={{
+                backgroundColor: '#FFFFFF',
+                border: '2px dashed rgba(229, 229, 229, 0.5)',
+                borderRadius: '16px',
+                padding: '12px 18px',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                gap: '10px'
+              }}
+            >
               <ImageUpload onImageChange={handleImageChange} />
-              <div className="grid gap-2">
-                <Label 
-                  htmlFor="input"
-                  style={{
-                    fontFamily: 'Inter',
-                    fontSize: '14px',
-                    fontWeight: 400,
-                    lineHeight: '16.8px',
-                    color: '#000000'
-                  }}
-                >
-                  商品名稱
-                </Label>
-                <div className="flex gap-2">
-                  <Input
-                    id="input"
-                    value={input}
-                    onChange={(e) => setInput(e.target.value)}
-                    placeholder={isAnalyzingImage ? `AI辨識中${analyzingDots}` : "請輸入"}
-                    disabled={isAnalyzingImage}
-                    className={`${originalCopy && input !== productNameUsedInOriginalCopy ? "flex-grow" : "w-full"} ${isAnalyzingImage ? 'animate-pulse' : ''}`}
-                    style={{
-                      backgroundColor: isAnalyzingImage ? '#F0F8FF' : '#FFFFFF',
-                      border: isAnalyzingImage ? '2px solid #4554E5' : '0.5px solid rgba(180, 201, 207, 0.5)',
-                      borderRadius: '6px',
-                      padding: '10px',
-                      height: '48px',
-                      fontFamily: 'Inter',
-                      fontSize: '14px',
-                      color: isAnalyzingImage ? '#4554E5' : '#000000',
-                      fontWeight: isAnalyzingImage ? 600 : 400
-                    }}
-                  />
-                  {originalCopy && input !== productNameUsedInOriginalCopy && input.trim() !== '' && (
-                    <Button
-                      onClick={handleUpdateProductNameInCopy}
-                      disabled={isLoading}
-                      style={{
-                        height: '48px',
-                        whiteSpace: 'nowrap'
-                      }}
-                    >
-                      更換商品名稱
-                    </Button>
-                  )}
-                </div>
-              </div>
-              <div className="grid gap-2">
-                <Label 
-                  htmlFor="tone"
-                  style={{
-                    fontFamily: 'Inter',
-                    fontSize: '14px',
-                    fontWeight: 400,
-                    lineHeight: '19.1px',
-                    color: '#000000'
-                  }}
-                >
-                  語氣
-                </Label>
-                <Select value={tone} onValueChange={(value: "搞笑" | "專業" | "簡潔" | "") => setTone(value)} disabled={isLoading}>
-                  <SelectTrigger
-                    style={{
-                      backgroundColor: '#FFFFFF',
-                      border: '0.5px solid rgba(180, 201, 207, 0.5)',
-                      borderRadius: '6px',
-                      padding: '10px',
-                      width: '265px',
-                      height: '48px',
-                      fontFamily: 'Inter',
-                      fontSize: '14px',
-                      color: '#000000'
-                    }}
-                  >
-                    <SelectValue placeholder="請選擇" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="搞笑">搞笑</SelectItem>
-                    <SelectItem value="專業">專業</SelectItem>
-                    <SelectItem value="簡潔">簡潔</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="grid gap-2">
-                <Label 
-                  htmlFor="customPoint"
-                  style={{
-                    fontFamily: 'Inter',
-                    fontSize: '14px',
-                    fontWeight: 400,
-                    lineHeight: '16.8px',
-                    color: '#000000'
-                  }}
-                >
-                  產品賣點
-                </Label>
+            </div>
+
+            {/* Product Name */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <label 
+                style={{
+                  fontFamily: 'Inter',
+                  fontSize: '14px',
+                  fontWeight: 600,
+                  lineHeight: '16.94px',
+                  color: '#000000'
+                }}
+              >
+                商品名稱
+              </label>
+              <div style={{ display: 'flex', gap: '8px' }}>
                 <Input
-                  id="customPoint"
-                  value={customPoint}
-                  onChange={(e) => setCustomPoint(e.target.value)}
-                  placeholder="請輸入"
-                  disabled={isLoading}
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  placeholder={isAnalyzingImage ? `AI辨識中${analyzingDots}` : "請輸入"}
+                  disabled={isAnalyzingImage}
                   style={{
-                    backgroundColor: '#FFFFFF',
-                    border: '0.5px solid rgba(180, 201, 207, 0.5)',
-                    borderRadius: '6px',
+                    backgroundColor: isAnalyzingImage ? '#F0F8FF' : '#FFFFFF',
+                    border: '0.5px solid rgba(229, 229, 229, 0.5)',
+                    borderRadius: '8px',
                     padding: '10px',
                     height: '48px',
                     fontFamily: 'Inter',
                     fontSize: '14px',
-                    color: '#000000'
+                    color: '#000000',
+                    flex: 1
                   }}
                 />
-                {aiSuggestedSellingPoints.length > 0 && (
-                  <div className="flex flex-wrap gap-2 mt-2">
-                    {aiSuggestedSellingPoints.map((point, index) => (
-                      <Button
-                        key={index}
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleAddSellingPoint(point)}
-                        disabled={isLoading}
-                      >
-                        {point}
-                      </Button>
-                    ))}
-                  </div>
+                {originalCopy && input !== productNameUsedInOriginalCopy && input.trim() !== '' && (
+                  <Button
+                    onClick={handleUpdateProductNameInCopy}
+                    disabled={isLoading}
+                    style={{ height: '48px', whiteSpace: 'nowrap' }}
+                  >
+                    更換商品名稱
+                  </Button>
                 )}
               </div>
-              <div className="grid gap-2">
-                <Label 
+            </div>
+
+            {/* Tone Selection */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <label 
+                style={{
+                  fontFamily: 'Inter',
+                  fontSize: '14px',
+                  fontWeight: 600,
+                  lineHeight: '16.94px',
+                  color: '#000000'
+                }}
+              >
+                語氣
+              </label>
+              <Select value={tone} onValueChange={(value: "搞笑" | "專業" | "簡潔" | "") => setTone(value)} disabled={isLoading}>
+                <SelectTrigger
                   style={{
-                    fontFamily: 'Inter',
+                    backgroundColor: '#FFFFFF',
+                    border: '0.5px solid rgba(229, 229, 229, 0.5)',
+                    borderRadius: '8px',
+                    padding: '10px',
+                    width: '265px',
+                    height: '48px',
+                    fontFamily: 'Nunito Sans',
                     fontSize: '14px',
-                    fontWeight: 400,
-                    lineHeight: '16.8px',
                     color: '#000000'
                   }}
                 >
-                  應用平台
-                </Label>
-                <div className="flex flex-row">
-                  {platforms.map((platform) => (
-                    <div 
-                      key={platform.id}
-                      className="flex items-center gap-3"
-                      style={{ padding: '0px 24px 24px 0px' }}
-                    >
+                  <SelectValue placeholder="請選擇" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="搞笑">搞笑</SelectItem>
+                  <SelectItem value="專業">專業</SelectItem>
+                  <SelectItem value="簡潔">簡潔</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Product Selling Points */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <label 
+                style={{
+                  fontFamily: 'Inter',
+                  fontSize: '14px',
+                  fontWeight: 600,
+                  lineHeight: '16.94px',
+                  color: '#000000'
+                }}
+              >
+                產品賣點
+              </label>
+              <Input
+                value={customPoint}
+                onChange={(e) => setCustomPoint(e.target.value)}
+                placeholder="請輸入"
+                style={{
+                  backgroundColor: '#FFFFFF',
+                  border: '0.5px solid rgba(229, 229, 229, 0.5)',
+                  borderRadius: '8px',
+                  padding: '10px',
+                  height: '48px',
+                  fontFamily: 'Inter',
+                  fontSize: '14px',
+                  color: '#000000'
+                }}
+              />
+            </div>
+
+            {/* Platform Selection */}
+            <div style={{ 
+              display: 'flex', 
+              flexDirection: 'column', 
+              alignSelf: 'stretch',
+              gap: '12px'
+            }}>
+              <label 
+                style={{
+                  fontFamily: 'Inter',
+                  fontSize: '14px',
+                  fontWeight: 600,
+                  lineHeight: '1.21em',
+                  textAlign: 'left',
+                  color: '#000000'
+                }}
+              >
+                應用平台
+              </label>
+              <div style={{ 
+                display: 'flex', 
+                flexDirection: 'row',
+                alignSelf: 'stretch'
+              }}>
+                {platforms.map((platform) => (
+                  <div 
+                    key={platform.id} 
+                    style={{ 
+                      display: 'flex', 
+                      flexDirection: 'row',
+                      alignItems: 'center', 
+                      gap: '12px', 
+                      padding: '0px 12px 24px 0px',
+                      cursor: 'pointer'
+                    }}
+                    onClick={() => handlePlatformChange(platform.id)}
+                  >
+                    <div style={{ 
+                      display: 'flex', 
+                      flexDirection: 'row',
+                      alignItems: 'center', 
+                      gap: '12px'
+                    }}>
                       <div 
-                        className="flex items-center gap-3 cursor-pointer"
-                        onClick={() => handlePlatformChange(platform.id)}
+                        style={{
+                          display: 'flex',
+                          width: '20px',
+                          height: '20px',
+                          backgroundColor: '#FFFFFF',
+                          border: '0.5px solid rgba(229, 229, 229, 0.3)',
+                          borderRadius: '6px',
+                          position: 'relative'
+                        }}
                       >
-                        <div
-                          style={{
-                            width: '20px',
-                            height: '20px',
-                            border: '0.5px solid rgba(180, 201, 207, 0.3)',
-                            borderRadius: '6px',
-                            backgroundColor: selectedPlatforms.includes(platform.id) ? '#4554E5' : '#FFFFFF',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center'
-                          }}
-                        >
-                          {selectedPlatforms.includes(platform.id) && (
-                            <div
-                              style={{
-                                width: '8px',
-                                height: '8px',
-                                backgroundColor: '#FFFFFF',
-                                borderRadius: '2px'
-                              }}
-                            />
-                          )}
-                        </div>
-                        <span
-                          style={{
-                            fontFamily: 'Inter',
-                            fontSize: '14px',
-                            fontWeight: 400,
-                            lineHeight: '19.1px',
-                            color: '#000000'
-                          }}
-                        >
-                          {platform.label}
-                        </span>
+                        {selectedPlatforms.includes(platform.id) && (
+                          <div
+                            style={{
+                              position: 'absolute',
+                              top: '50%',
+                              left: '50%',
+                              transform: 'translate(-50%, -50%)',
+                              width: '12px',
+                              height: '12px',
+                              backgroundColor: '#9245E5',
+                              borderRadius: '2px'
+                            }}
+                          />
+                        )}
                       </div>
                     </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Bottom Generate Button */}
-          <div 
-            className="flex justify-center items-center"
-            style={{
-              width: '516px',
-              height: '81px',
-              backgroundColor: '#FFFFFF',
-              boxShadow: '0px -4px 4px 0px rgba(194, 194, 194, 0.25)',
-              padding: '16px 10px',
-              gap: '10px',
-              position: 'relative',
-              zIndex: 2
-            }}
-          >
-            <Button 
-              onClick={handleGenerate} 
-              disabled={isLoading || isAnalyzingImage || (!input && !currentImageFile)}
-              style={{
-                backgroundColor: '#4554E5',
-                borderRadius: '32px',
-                padding: '8px 82px',
-                fontFamily: 'Inter',
-                fontSize: '18px',
-                fontWeight: 500,
-                lineHeight: '21.78px',
-                color: '#FFFFFF',
-                width: '200px',
-                minWidth: '200px'
-              }}
-            >
-              {(isLoading && !isAnalyzingImage) ? `生成中${loadingDots}` : "開始生成"}
-            </Button>
-          </div>
-        </div>
-
-        {/* Right Content Area */}
-        <div className="flex-1 flex justify-center items-center">
-          {Object.keys(platformResults).length > 0 ? (
-            <div className="w-full max-w-5xl px-6 -mt-24">
-              <h2 className="text-2xl font-semibold text-white mb-6">生成結果</h2>
-              <div className="grid grid-cols-3 gap-4">
-                {Object.entries(platformResults).map(([platform, text]) => (
-                  <Card key={platform} className="bg-white shadow-lg">
-                    <CardHeader className="pb-3">
-                      <CardTitle className="text-lg font-medium">
-                        {platform === 'instagram' ? 'Instagram' : 
-                         platform === 'facebook' ? 'Facebook' : 
-                         platform === '電商網站' ? '電商網站' : platform}
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-2 pt-0 pb-4">
-                      <div 
-                        className="bg-gray-50 p-4 rounded border whitespace-pre-wrap text-sm"
-                        style={{ height: '400px', overflowY: 'auto' }}
-                      >
-                        {text}
-                      </div>
-                      <div className="flex justify-end">
-                        <Button
-                          onClick={(e) => { e.stopPropagation(); handleCopyToClipboard(text, platform) }}
-                          disabled={!text}
-                          className="flex items-center gap-2"
-                          style={{
-                            backgroundColor: copiedStates[platform] ? '#10B981' : '#3B82F6',
-                            color: 'white'
-                          }}
-                        >
-                          {copiedStates[platform] ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-                          {copiedStates[platform] ? '已複製' : '複製文案'}
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
+                    <span 
+                      style={{
+                        fontFamily: 'Inter',
+                        fontSize: '14px',
+                        fontWeight: 400,
+                        lineHeight: '1.21em',
+                        textAlign: 'left',
+                        color: '#000000'
+                      }}
+                    >
+                      {platform.label}
+                    </span>
+                  </div>
                 ))}
               </div>
             </div>
+
+            {/* Generate Button */}
+            <Button
+              onClick={handleGenerate}
+              disabled={isLoading}
+              style={{
+                backgroundColor: 'rgba(146, 69, 229, 0.1)',
+                borderRadius: '8px',
+                padding: '10px',
+                height: 'auto',
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center',
+                gap: '10px',
+                marginTop: 'auto'
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <div style={{ padding: '4px', width: '24px', height: '24px' }}>
+                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M8 1L8 15M1 8L15 8" stroke="#9245E5" strokeWidth="2" strokeLinecap="round"/>
+                  </svg>
+                </div>
+                <span 
+                  style={{
+                    fontFamily: 'Inter',
+                    fontSize: '18px',
+                    fontWeight: 500,
+                    lineHeight: '21.78px',
+                    color: '#9245E5'
+                  }}
+                >
+                  {isLoading ? `開始生成${loadingDots}` : '開始生成'}
+                </span>
+              </div>
+            </Button>
+
+            {/* AI Suggested Selling Points */}
+            {aiSuggestedSellingPoints.length > 0 && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <h3 style={{ fontSize: '14px', fontWeight: 600, color: '#000000' }}>AI 建議賣點：</h3>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                  {aiSuggestedSellingPoints.map((point, index) => (
+                    <Button
+                      key={index}
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleAddSellingPoint(point)}
+                      style={{ fontSize: '12px', padding: '4px 8px' }}
+                    >
+                      + {point}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Right Panel - Results */}
+        <div 
+          style={{
+            flex: 1,
+            margin: '16px 16px 16px 0',
+            backgroundColor: '#FFFFFF',
+            borderRadius: '6px',
+            padding: '16px 0px',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '16px'
+          }}
+        >
+          {!output && Object.keys(platformResults).length === 0 ? (
+            <>
+              <h2 
+                style={{
+                  fontFamily: 'Inter',
+                  fontSize: '18px',
+                  fontWeight: 400,
+                  lineHeight: '21.78px',
+                  color: '#000000',
+                  textAlign: 'center'
+                }}
+              >
+                文案結果將顯示在這裡
+              </h2>
+              <p 
+                style={{
+                  fontFamily: 'Inter',
+                  fontSize: '14px',
+                  fontWeight: 400,
+                  lineHeight: '16.94px',
+                  color: 'rgba(0, 0, 0, 0.8)',
+                  textAlign: 'center'
+                }}
+              >
+                請填寫左側表單並點擊「開始生成」
+              </p>
+            </>
           ) : (
-            <Card className="w-full max-w-md mx-6" style={{ backgroundColor: 'rgba(255, 255, 255, 0.1)' }}>
-              <CardContent className="flex flex-col items-center justify-center py-12 text-center">
-                <Sparkles className={`h-12 w-12 text-white mb-4 ${(isLoading && !isAnalyzingImage) ? 'animate-dramatic-blink' : ''}`} />
-                <h3 className="text-xl font-medium text-white mb-2">
-                  {(isLoading && !isAnalyzingImage) ? `生成中${loadingDots}` : '文案結果將顯示在這裡'}
-                </h3>
-                <p className="text-white/80">
-                  {(isLoading && !isAnalyzingImage) ? '請稍候，AI正在為您生成文案' : '請填寫左側表單並點擊「開始生成」'}
-                </p>
-              </CardContent>
-            </Card>
+            <div style={{ width: '100%', maxWidth: '600px' }}>
+              {Object.keys(platformResults).length > 0 ? (
+                Object.entries(platformResults).map(([platform, text]) => (
+                  <Card key={platform} style={{ marginBottom: '16px' }}>
+                    <CardHeader>
+                      <CardTitle style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span>{platform}</span>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleCopyToClipboard(text, platform)}
+                          style={{ display: 'flex', alignItems: 'center', gap: '4px' }}
+                        >
+                          {copiedStates[platform] ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                          {copiedStates[platform] ? '已複製' : '複製'}
+                        </Button>
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <p style={{ whiteSpace: 'pre-wrap', lineHeight: '1.6' }}>{text}</p>
+                    </CardContent>
+                  </Card>
+                ))
+              ) : output && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span>生成結果</span>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleCopyToClipboard(output, 'single')}
+                        style={{ display: 'flex', alignItems: 'center', gap: '4px' }}
+                      >
+                        {copiedStates['single'] ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                        {copiedStates['single'] ? '已複製' : '複製'}
+                      </Button>
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p style={{ whiteSpace: 'pre-wrap', lineHeight: '1.6' }}>{output}</p>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
           )}
         </div>
       </div>
-    </main>
+    </div>
   )
 }
