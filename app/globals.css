@@ -123,6 +123,56 @@
   }
   body {
     @apply bg-background text-foreground;
+    /* 優化字體渲染 */
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    /* 優化滾動性能 */
+    overflow-x: hidden;
+  }
+  
+  /* 提升所有交互元素的性能 */
+  button, input, select, textarea {
+    will-change: background-color, border-color, transform;
+  }
+  
+  /* 優化圖片載入 */
+  img {
+    max-width: 100%;
+    height: auto;
+    /* 圖片懶加載 */
+    loading: lazy;
+  }
+  
+  /* 背景圖片優化 */
+  .background-layer {
+    /* 使用GPU加速 */
+    transform: translateZ(0);
+    /* 優化背景圖片渲染 */
+    backface-visibility: hidden;
+    /* 使背景圖片緩存 */
+    background-attachment: fixed;
+  }
+  
+  /* 減少重新渲染 */
+  .main-content {
+    contain: layout style;
+  }
+  
+  /* 進一步性能優化 */
+  * {
+    /* 移除平滑滾動，提升性能 */
+    scroll-behavior: auto !important;
+  }
+  
+  /* 簡化過渡效果以提升性能 */
+  .left-panel, .right-panel {
+    will-change: auto;
+  }
+  
+  /* 禁用觸摸滾動優化以避免延遲 */
+  body {
+    -webkit-overflow-scrolling: auto;
+    overscroll-behavior: none;
   }
   
   /* 統一 placeholder 文字顏色 */
@@ -422,4 +472,83 @@ footer {
     font-size: 10px !important;
     letter-spacing: 0.2px !important;
   }
+}
+
+/* 高性能的Generate按鈕hover效果 */
+.generate-button {
+  background-color: rgba(146, 69, 229, 0.1);
+  border: none;
+  border-radius: 8px;
+  transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+  will-change: background-color, transform;
+}
+
+.generate-button:hover {
+  background-color: #9245E5 !important;
+  transform: translateY(-1px);
+}
+
+.generate-button:active {
+  transform: scale(0.95);
+}
+
+.generate-button svg path {
+  fill: #9245E5;
+  transition: fill 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.generate-button:hover svg path {
+  fill: #FFFFFF !important;
+}
+
+.generate-button .button-text {
+  color: #9245E5;
+  transition: color 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.generate-button:hover .button-text {
+  color: #FFFFFF !important;
+}
+
+.generate-button .sparkle-icon {
+  animation: none;
+  transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.generate-button:hover .sparkle-icon,
+.generate-button.generating .sparkle-icon {
+  animation: sparkle 2s ease-in-out infinite;
+}
+
+/* 複製按鈕hover效果 */
+.copy-button {
+  transition: all 0.12s cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: background-color, transform;
+}
+
+.copy-button:hover {
+  background-color: #9245E5 !important;
+  border-color: #9245E5 !important;
+  color: #FFFFFF !important;
+  transform: translateY(-1px);
+}
+
+.copy-button svg path {
+  transition: fill 0.12s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.copy-button:hover svg path {
+  fill: #FFFFFF !important;
+}
+
+/* AI建議按鈕hover效果 */
+.ai-suggestion-chip {
+  transition: all 0.12s cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: background-color, transform;
+}
+
+.ai-suggestion-chip:hover {
+  background-color: rgba(146, 69, 229, 0.15) !important;
+  transform: translateY(-1px);
 }

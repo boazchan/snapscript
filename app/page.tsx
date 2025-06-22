@@ -121,18 +121,39 @@ export default function Home() {
       if (currentImageFile) {
         const reader = new FileReader()
         reader.onload = async (e) => {
-          const base64Image = e.target?.result as string
-          const response = await fetch("/api/generate", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              image: base64Image,
-              tone,
-              customPoint,
-              platforms: selectedPlatforms,
-            }),
-          })
-          data = await response.json()
+          try {
+            const base64Image = e.target?.result as string
+            const response = await fetch("/api/generate", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                image: base64Image,
+                tone,
+                customPoint,
+                platforms: selectedPlatforms,
+              }),
+            })
+            
+            // 檢查響應是否為 JSON 格式
+            const contentType = response.headers.get('content-type');
+            if (!contentType || !contentType.includes('application/json')) {
+              const errorText = await response.text();
+              console.error('Non-JSON response:', errorText);
+              setOutput("服務暫時無法使用，請稍後再試");
+              setIsLoading(false);
+              setIsGenerating(false);
+              return;
+            }
+
+            try {
+              data = await response.json()
+            } catch (jsonError) {
+              console.error('Failed to parse JSON response:', jsonError);
+              setOutput("服務響應格式錯誤，請稍後再試");
+              setIsLoading(false);
+              setIsGenerating(false);
+              return;
+            }
           if (data.product_name) {
             setInput(data.product_name) // Populate input with AI-detected name
             setProductNameUsedInOriginalCopy(data.product_name)
@@ -151,6 +172,12 @@ export default function Home() {
           }
           setIsLoading(false)
           setIsGenerating(false)
+          } catch (readerError) {
+            console.error('Error in image reader:', readerError);
+            setOutput("圖片處理失敗，請稍後再試");
+            setIsLoading(false);
+            setIsGenerating(false);
+          }
         }
         reader.readAsDataURL(currentImageFile)
       } else {
@@ -164,7 +191,27 @@ export default function Home() {
             platforms: selectedPlatforms,
           }),
         })
-        data = await response.json()
+        
+        // 檢查響應是否為 JSON 格式
+        const contentType = response.headers.get('content-type');
+        if (!contentType || !contentType.includes('application/json')) {
+          const errorText = await response.text();
+          console.error('Non-JSON response:', errorText);
+          setOutput("服務暫時無法使用，請稍後再試");
+          setIsLoading(false);
+          setIsGenerating(false);
+          return;
+        }
+
+        try {
+          data = await response.json();
+        } catch (jsonError) {
+          console.error('Failed to parse JSON response:', jsonError);
+          setOutput("服務響應格式錯誤，請稍後再試");
+          setIsLoading(false);
+          setIsGenerating(false);
+          return;
+        }
         setProductNameUsedInOriginalCopy(input) // Use current input as the product name for original copy
         if (data.platform_results) {
           setPlatformResults(data.platform_results)
@@ -226,7 +273,26 @@ export default function Home() {
               analyzeOnly: true, // 只進行分析，不生成文案
             }),
           })
-          const data: { text?: string; product_name?: string; selling_points?: string[] } = await response.json()
+          
+          // 檢查響應是否為 JSON 格式
+          const contentType = response.headers.get('content-type');
+          if (!contentType || !contentType.includes('application/json')) {
+            const errorText = await response.text();
+            console.error('Non-JSON response:', errorText);
+            setOutput("圖片分析服務暫時無法使用，請稍後再試");
+            setIsAnalyzingImage(false);
+            return;
+          }
+
+          let data: { text?: string; product_name?: string; selling_points?: string[] };
+          try {
+            data = await response.json();
+          } catch (jsonError) {
+            console.error('Failed to parse JSON response:', jsonError);
+            setOutput("服務響應格式錯誤，請稍後再試");
+            setIsAnalyzingImage(false);
+            return;
+          }
           if (data.product_name) {
             setInput(data.product_name) // Populate input with AI-detected name immediately
             if (data.selling_points) {
@@ -258,16 +324,170 @@ export default function Home() {
     console.log("Product name used in original copy:", productNameUsedInOriginalCopy);
     console.log("New product name (from input):", input);
 
-    // Use regex to replace the product name in the copy
-    // Escape special characters in productNameUsedInOriginalCopy to be used in regex
-    const escapedProductName = productNameUsedInOriginalCopy.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\$&');
-    const regex = new RegExp(escapedProductName, 'g');
+    // 智能替換函數 - 處理商品名稱和類似名稱
+    const smartReplace = (text: string, oldName: string, newName: string, isInstagram: boolean = false) => {
+      let updatedText = text;
+      
+      // 1. 直接替換完整的商品名稱
+      const escapedOldName = oldName.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\$&');
+      const exactRegex = new RegExp(escapedOldName, 'g');
+      updatedText = updatedText.replace(exactRegex, newName);
+      
+      // 2. 處理商品名稱的各個部分（例如："Nike Air Max" -> ["Nike", "Air", "Max"]）
+      const oldNameParts = oldName.split(/\s+/).filter(part => part.length > 1);
+      const newNameParts = newName.split(/\s+/).filter(part => part.length > 1);
+      
+      // 如果新舊名稱都有多個部分，嘗試部分替換
+      if (oldNameParts.length > 1 && newNameParts.length > 1) {
+        oldNameParts.forEach((oldPart, index) => {
+          if (newNameParts[index]) {
+            const escapedOldPart = oldPart.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\$&');
+            // 只替換獨立的詞彙，避免誤替換
+            const partRegex = new RegExp(`\\b${escapedOldPart}\\b`, 'g');
+            updatedText = updatedText.replace(partRegex, newNameParts[index]);
+          }
+        });
+      }
+      
+      // 3. 特別處理 Instagram 標籤
+      if (isInstagram) {
+        console.log('=== Instagram Hashtag Processing ===');
+        console.log('Old name:', oldName);
+        console.log('New name:', newName);
+        console.log('Original text:', updatedText);
+        
+        // 處理完整商品名稱的 hashtag（移除空格和特殊字符）
+        const oldHashtag = oldName.replace(/\s+/g, '').replace(/[^a-zA-Z0-9\u4e00-\u9fff]/g, '');
+        const newHashtag = newName.replace(/\s+/g, '').replace(/[^a-zA-Z0-9\u4e00-\u9fff]/g, '');
+        
+        console.log('Old hashtag cleaned:', oldHashtag);
+        console.log('New hashtag cleaned:', newHashtag);
+        
+        if (oldHashtag && newHashtag && oldHashtag !== newHashtag) {
+          // 逐步嘗試不同的匹配策略
+          let foundMatch = false;
+          
+          // 策略1: 精確匹配（後面跟空格、#或結尾）
+          const exactPattern = new RegExp(`#${oldHashtag}(?=[\\s#]|$)`, 'gi');
+          const beforeExact = updatedText;
+          updatedText = updatedText.replace(exactPattern, `#${newHashtag}`);
+          if (beforeExact !== updatedText) {
+            console.log(`Exact pattern matched: #${oldHashtag} -> #${newHashtag}`);
+            foundMatch = true;
+          }
+          
+          // 策略2: 如果精確匹配失敗，使用全局匹配
+          if (!foundMatch) {
+            const globalPattern = new RegExp(`#${oldHashtag}`, 'gi');
+            const beforeGlobal = updatedText;
+            updatedText = updatedText.replace(globalPattern, `#${newHashtag}`);
+            if (beforeGlobal !== updatedText) {
+              console.log(`Global pattern matched: #${oldHashtag} -> #${newHashtag}`);
+              foundMatch = true;
+            }
+          }
+          
+          if (!foundMatch) {
+            console.log(`No match found for hashtag: #${oldHashtag}`);
+          }
+        }
+        
+        // 處理商品名稱各部分的 hashtag
+        console.log('Processing name parts...');
+        console.log('Old parts:', oldNameParts);
+        console.log('New parts:', newNameParts);
+        
+        oldNameParts.forEach((oldPart, index) => {
+          if (newNameParts[index] && oldPart.length > 1) {
+            // 清理部分名稱，移除特殊字符
+            const cleanOldPart = oldPart.replace(/[^a-zA-Z0-9\u4e00-\u9fff]/g, '');
+            const cleanNewPart = newNameParts[index].replace(/[^a-zA-Z0-9\u4e00-\u9fff]/g, '');
+            
+            console.log(`Processing part ${index}: "${cleanOldPart}" -> "${cleanNewPart}"`);
+            
+                         if (cleanOldPart && cleanNewPart && cleanOldPart !== cleanNewPart) {
+               let partFoundMatch = false;
+               
+               // 策略1: 獨立hashtag匹配 (如 #Nike)
+               const independentPattern = new RegExp(`#${cleanOldPart}(?=[\\s#]|$)`, 'gi');
+               const beforeIndependent = updatedText;
+               updatedText = updatedText.replace(independentPattern, `#${cleanNewPart}`);
+               if (beforeIndependent !== updatedText) {
+                 console.log(`Independent hashtag matched: #${cleanOldPart} -> #${cleanNewPart}`);
+                 partFoundMatch = true;
+               }
+               
+               // 策略2: 複合hashtag匹配 (如 #NikeShoes)
+               const compoundPattern = new RegExp(`#([^\\s#]*?)${cleanOldPart}([^\\s#]*?)(?=[\\s#]|$)`, 'gi');
+               const beforeCompound = updatedText;
+               updatedText = updatedText.replace(compoundPattern, (match, prefix, suffix) => {
+                 const result = `#${prefix}${cleanNewPart}${suffix}`;
+                 console.log(`Compound hashtag: ${match} -> ${result}`);
+                 return result;
+               });
+               if (beforeCompound !== updatedText) {
+                 partFoundMatch = true;
+               }
+               
+               // 策略3: 如果前面都沒匹配到，使用全局匹配
+               if (!partFoundMatch) {
+                 const globalPartPattern = new RegExp(`#${cleanOldPart}`, 'gi');
+                 const beforeGlobalPart = updatedText;
+                 updatedText = updatedText.replace(globalPartPattern, `#${cleanNewPart}`);
+                 if (beforeGlobalPart !== updatedText) {
+                   console.log(`Global part pattern matched: #${cleanOldPart} -> #${cleanNewPart}`);
+                   partFoundMatch = true;
+                 }
+               }
+               
+               if (!partFoundMatch) {
+                 console.log(`No match found for part: #${cleanOldPart}`);
+               }
+             }
+          }
+        });
+        
+        // 最後的後備策略：如果所有正則表達式都失敗，嘗試簡單的字符串替換
+        console.log('Applying fallback strategy...');
+        
+        // 對完整名稱進行後備替換
+        if (oldHashtag && newHashtag && oldHashtag !== newHashtag) {
+          const simpleHashtagReplace = updatedText.replace(`#${oldHashtag}`, `#${newHashtag}`);
+          if (simpleHashtagReplace !== updatedText) {
+            console.log(`Fallback: Simple string replace worked for #${oldHashtag}`);
+            updatedText = simpleHashtagReplace;
+          }
+        }
+        
+        // 對部分名稱進行後備替換
+        oldNameParts.forEach((oldPart, index) => {
+          if (newNameParts[index] && oldPart.length > 1) {
+            const cleanOldPart = oldPart.replace(/[^a-zA-Z0-9\u4e00-\u9fff]/g, '');
+            const cleanNewPart = newNameParts[index].replace(/[^a-zA-Z0-9\u4e00-\u9fff]/g, '');
+            
+            if (cleanOldPart && cleanNewPart && cleanOldPart !== cleanNewPart) {
+              const simplePartReplace = updatedText.replace(`#${cleanOldPart}`, `#${cleanNewPart}`);
+              if (simplePartReplace !== updatedText) {
+                console.log(`Fallback: Simple string replace worked for #${cleanOldPart}`);
+                updatedText = simplePartReplace;
+              }
+            }
+          }
+        });
+        
+        console.log('Final Instagram text:', updatedText);
+        console.log('=== End Instagram Processing ===');
+      }
+      
+      return updatedText;
+    };
 
     // Update platform results if they exist
     if (Object.keys(platformResults).length > 0) {
       const updatedPlatformResults: {[key: string]: string} = {};
       Object.entries(platformResults).forEach(([platform, text]) => {
-        updatedPlatformResults[platform] = text.replace(regex, input);
+        const isInstagram = platform === 'instagram';
+        updatedPlatformResults[platform] = smartReplace(text, productNameUsedInOriginalCopy, input, isInstagram);
         console.log(`Updated ${platform} copy:`, updatedPlatformResults[platform]);
       });
       setPlatformResults(updatedPlatformResults);
@@ -278,7 +498,7 @@ export default function Home() {
       setDisplayCopy(firstPlatformResult);
     } else if (originalCopy) {
       // Fallback for single copy
-      const updatedCopy = originalCopy.replace(regex, input);
+      const updatedCopy = smartReplace(originalCopy, productNameUsedInOriginalCopy, input);
       console.log("Updated copy:", updatedCopy);
       setDisplayCopy(updatedCopy);
       setOriginalCopy(updatedCopy);
@@ -313,6 +533,14 @@ export default function Home() {
         }),
       });
       
+      // 檢查響應是否為 JSON 格式
+      const contentType = response.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        console.error('Non-JSON response from suggestions API');
+        setAiSuggestedSellingPoints([]);
+        return;
+      }
+
       const data: { selling_points?: string[] } = await response.json();
       if (data.selling_points && Array.isArray(data.selling_points)) {
         setAiSuggestedSellingPoints(data.selling_points);
@@ -504,20 +732,34 @@ export default function Home() {
                     boxShadow: isAnalyzingImage ? '0 0 15px rgba(146, 69, 229, 0.2)' : 'none'
                   }}
                 />
-                {originalCopy && input !== productNameUsedInOriginalCopy && input.trim() !== '' && (
+                {originalCopy && input.trim() !== '' && (
                   <Button
                     onClick={handleUpdateProductNameInCopy}
-                    disabled={isLoading}
+                    disabled={isLoading || input === productNameUsedInOriginalCopy}
                     style={{ 
                       height: '48px', 
                       whiteSpace: 'nowrap',
-                      minWidth: 'fit-content'
+                      minWidth: 'fit-content',
+                      opacity: input === productNameUsedInOriginalCopy ? 0.5 : 1
                     }}
                   >
                     更換商品名稱
                   </Button>
-                )}
+                                )}
               </div>
+              {originalCopy && input.trim() !== '' && (
+                <div style={{
+                  fontSize: '12px',
+                  color: input === productNameUsedInOriginalCopy ? '#999' : '#666',
+                  fontFamily: 'Inter',
+                  marginTop: '-8px'
+                }}>
+                  {input === productNameUsedInOriginalCopy 
+                    ? '💡 修改商品名稱後會智能更新文案，與產品名稱相關的文字也會同步調整'
+                    : '💡 修改商品名稱後會智能更新文案，與產品名稱相關的文字也會同步調整'
+                  }
+                </div>
+              )}
             </div>
 
             {/* Tone Selection */}
@@ -774,14 +1016,45 @@ export default function Home() {
             >
               {isLoading ? (
                 // 生成中狀態
-                <img 
-                  src="/typing.gif" 
-                  alt="正在生成"
-                  style={{
-                    width: '350px',
-                    height: 'auto'
-                  }}
-                />
+                <>
+                  <img 
+                    src="/typing.gif" 
+                    alt="正在生成"
+                    style={{
+                      width: '350px',
+                      height: 'auto'
+                    }}
+                  />
+                  <div
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'center',
+                      alignItems: 'center',
+                      gap: '10px',
+                      fontFamily: 'Inter',
+                      fontSize: '16px',
+                      fontWeight: 600,
+                      lineHeight: '19.36px',
+                      color: '#9245E5',
+                      cursor: 'default',
+                      userSelect: 'none'
+                    }}
+                  >
+                    <div
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        animation: 'sparkle 1.5s ease-in-out infinite'
+                      }}
+                    >
+                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M8.60744 4.18038L8.15716 5.68256C7.78499 6.92452 6.84039 7.89599 5.63443 8.27906L4.17492 8.74251C3.94125 8.81634 3.94125 9.15698 4.17492 9.23082L5.63443 9.69428C6.8411 10.0773 7.78497 11.0495 8.15716 12.2908L8.60744 13.793C8.67918 14.0335 9.01014 14.0335 9.08188 13.793L9.53217 12.2908C9.90434 11.0488 10.8489 10.0773 12.0549 9.69428L13.5144 9.23082C13.7481 9.15699 13.7481 8.81636 13.5144 8.74251L12.0549 8.27906C10.8482 7.89601 9.90436 6.92379 9.53217 5.68256L9.08188 4.18038C9.01015 3.93987 8.6799 3.93987 8.60744 4.18038ZM17.0158 13.2411L17.3425 14.3324C17.6131 15.2345 18.2992 15.9414 19.1756 16.2191L20.236 16.5554C20.4057 16.6095 20.4057 16.8566 20.236 16.9106L19.1756 17.2469C18.2992 17.5254 17.6124 18.2315 17.3425 19.1336L17.0158 20.225C16.9633 20.3997 16.7232 20.3997 16.6706 20.225L16.3439 19.1336C16.0733 18.2315 15.3873 17.5247 14.5108 17.2469L13.4505 16.9106C13.2807 16.8565 13.2807 16.6095 13.4505 16.5554L14.5108 16.2191C15.3873 15.9406 16.0741 15.2345 16.3439 14.3324L16.6706 13.2411C16.7232 13.0663 16.964 13.0663 17.0158 13.2411ZM7.36235 17.5912V16.676C7.36235 16.5429 7.46676 16.4355 7.59603 16.4355C7.72529 16.4355 7.8297 16.5429 7.8297 16.676V17.5912C7.8297 17.7242 7.7253 17.8317 7.59603 17.8317C7.46748 17.8317 7.36235 17.7235 7.36235 17.5912ZM7.36235 19.9764V19.0612C7.36235 18.9282 7.46676 18.8207 7.59603 18.8207C7.72529 18.8207 7.8297 18.9282 7.8297 19.0612V19.9764C7.8297 20.1094 7.7253 20.2169 7.59603 20.2169C7.46748 20.2169 7.36235 20.1095 7.36235 19.9764ZM8.07614 18.3258C8.07614 18.1928 8.18054 18.0853 8.30981 18.0853H9.19901C9.32827 18.0853 9.43268 18.1928 9.43268 18.3258C9.43268 18.4589 9.32828 18.5663 9.19901 18.5663H8.30981C8.18055 18.5663 8.07614 18.4589 8.07614 18.3258ZM5.75941 18.3258C5.75941 18.1928 5.86381 18.0853 5.99308 18.0853H6.88228C7.01154 18.0853 7.11596 18.1928 7.11596 18.3258C7.11596 18.4589 7.01155 18.5663 6.88228 18.5663H5.99308C5.86382 18.5663 5.75941 18.4589 5.75941 18.3258ZM17.998 6.91136V5.99616C17.998 5.86312 18.1024 5.75566 18.2316 5.75566C18.3609 5.75566 18.4653 5.86311 18.4653 5.99616V6.91136C18.4653 7.04441 18.3609 7.15187 18.2316 7.15187C18.1031 7.15187 17.998 7.04441 17.998 6.91136ZM17.998 9.29583V8.38063C17.998 8.24759 18.1024 8.14013 18.2316 8.14013C18.3609 8.14013 18.4653 8.24758 18.4653 8.38063V9.29583C18.4653 9.42887 18.3609 9.53634 18.2316 9.53634C18.1031 9.53707 17.998 9.42888 17.998 9.29583ZM18.7124 7.64598C18.7124 7.51294 18.8168 7.40547 18.9461 7.40547H19.8353C19.9646 7.40547 20.069 7.51293 20.069 7.64598C20.069 7.77903 19.9646 7.88648 19.8353 7.88648H18.9461C18.8169 7.88648 18.7124 7.77903 18.7124 7.64598ZM16.395 7.64598C16.395 7.51294 16.4994 7.40547 16.6287 7.40547H17.5179C17.6471 7.40547 17.7515 7.51293 17.7515 7.64598C17.7515 7.77903 17.6471 7.88648 17.5179 7.88648H16.6287C16.4994 7.88648 16.395 7.77903 16.395 7.64598Z" fill="#9245E5"/>
+                      </svg>
+                    </div>
+                    生成中
+                  </div>
+                </>
               ) : (
                 // 初始狀態
                 <>

@@ -2,7 +2,7 @@ import crypto from 'crypto';
 
 // 環境檢查
 export function validateEnvironment(): boolean {
-  const requiredEnvVars = ['GOOGLE_AI_API_KEY'];
+  const requiredEnvVars = ['GEMINI_API_KEY'];
   return requiredEnvVars.every(envVar => process.env[envVar]);
 }
 
@@ -13,7 +13,7 @@ export function generateSecureToken(): string {
 
 // 檢查請求來源
 export function validateOrigin(origin: string | null): boolean {
-  if (!origin) return false;
+  if (!origin) return true; // 允許null origin (用於某些生產環境)
   
   const allowedOrigins = [
     process.env.NEXT_PUBLIC_SITE_URL,
@@ -23,12 +23,17 @@ export function validateOrigin(origin: string | null): boolean {
     'http://localhost:3003',
   ].filter(Boolean);
   
+  // 允許 .vercel.app 域名
+  if (origin.includes('.vercel.app')) {
+    return true;
+  }
+  
   return allowedOrigins.includes(origin);
 }
 
 // 檢查 User-Agent 是否為瀏覽器
 export function validateUserAgent(userAgent: string | null): boolean {
-  if (!userAgent) return false;
+  if (!userAgent) return true; // 允許null user agent (用於某些生產環境)
   
   const browserPatterns = [
     /Mozilla/,

@@ -12,7 +12,7 @@ import {
 } from "../../lib/security"
 
 // Access your API key as an environment variable (or directly if you must).
-const genAI = new GoogleGenerativeAI(process.env.GOOGLE_AI_API_KEY!);
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
 
 // Security: Input validation constants
 const MAX_IMAGE_SIZE = 10 * 1024 * 1024; // 10MB in bytes
@@ -67,29 +67,30 @@ function safeError(message: string, error?: any) {
 }
 
 export async function POST(req: Request) {
+  // Wrap the entire function in a try-catch to ensure we always return JSON
   try {
     // 🔒 環境變量檢查
     if (!validateEnvironment()) {
       return NextResponse.json({ 
-        text: obfuscateError(new Error('Environment validation failed')) 
+        text: "Environment validation failed" 
       }, { status: 500 });
     }
 
-    // 🔒 檢查請求來源
-    const origin = req.headers.get('origin');
-    if (!validateOrigin(origin)) {
-      return NextResponse.json({ 
-        text: obfuscateError(new Error('Invalid origin')) 
-      }, { status: 403 });
-    }
+    // 🔒 檢查請求來源 - 暫時禁用
+    // const origin = req.headers.get('origin');
+    // if (!validateOrigin(origin)) {
+    //   return NextResponse.json({ 
+    //     text: "Invalid origin: " + origin 
+    //   }, { status: 403 });
+    // }
 
-    // 🔒 檢查 User-Agent
-    const userAgent = req.headers.get('user-agent');
-    if (!validateUserAgent(userAgent)) {
-      return NextResponse.json({ 
-        text: obfuscateError(new Error('Invalid user agent')) 
-      }, { status: 403 });
-    }
+    // 🔒 檢查 User-Agent - 暫時禁用
+    // const userAgent = req.headers.get('user-agent');
+    // if (!validateUserAgent(userAgent)) {
+    //   return NextResponse.json({ 
+    //     text: "Invalid user agent" 
+    //   }, { status: 403 });
+    // }
 
     // 🔒 檢測自動化請求 (暫時禁用 - 避免誤判正常請求)
     // if (detectAutomation(req.headers as Headers)) {
@@ -98,29 +99,39 @@ export async function POST(req: Request) {
     //   }, { status: 403 });
     // }
 
-    // 🔒 進階頻率限制
-    const rateLimitKey = getRateLimitKey(req);
-    const rateLimit = AdvancedRateLimit.checkLimit(rateLimitKey, 10, 60000, 300000);
+    // 🔒 進階頻率限制 - 暫時禁用
+    // const rateLimitKey = getRateLimitKey(req);
+    // const rateLimit = AdvancedRateLimit.checkLimit(rateLimitKey, 50, 60000, 300000);
     
-    if (!rateLimit.allowed) {
-      return NextResponse.json({ 
-        text: AdvancedRateLimit.isSuspicious(rateLimitKey) 
-          ? "您的 IP 已被暫時封鎖，請稍後再試" 
-          : "請求過於頻繁，請稍後再試" 
-      }, { 
-        status: 429,
-        headers: {
-          'X-RateLimit-Remaining': rateLimit.remaining.toString(),
-          'X-RateLimit-Reset': new Date(rateLimit.resetTime).toISOString(),
-        }
-      });
-    }
+    // if (!rateLimit.allowed) {
+    //   return NextResponse.json({ 
+    //     text: AdvancedRateLimit.isSuspicious(rateLimitKey) 
+    //       ? "您的 IP 已被暫時封鎖，請稍後再試" 
+    //       : "請求過於頻繁，請稍後再試" 
+    //   }, { 
+    //     status: 429,
+    //     headers: {
+    //       'X-RateLimit-Remaining': rateLimit.remaining.toString(),
+    //       'X-RateLimit-Reset': new Date(rateLimit.resetTime).toISOString(),
+    //     }
+    //   });
+    // }
 
-    // Security: Rate limiting check (保留原有的檢查作為雙重保險)
-    if (!checkRateLimit(rateLimitKey)) {
+    // Security: Rate limiting check (保留原有的檢查作為雙重保險) - 暫時禁用
+    // if (!checkRateLimit(rateLimitKey)) {
+    //   return NextResponse.json({ 
+    //     text: "請求過於頻繁，請稍後再試" 
+    //   }, { status: 429 });
+    // }
+
+    let requestBody;
+    try {
+      requestBody = await req.json();
+    } catch (jsonError) {
+      console.error('Failed to parse JSON:', jsonError);
       return NextResponse.json({ 
-        text: "請求過於頻繁，請稍後再試" 
-      }, { status: 429 });
+        text: "Invalid JSON in request body" 
+      }, { status: 400 });
     }
 
     const { item, tone, image, customPoint, platforms, analyzeOnly, getSuggestionsOnly }: {
@@ -131,7 +142,7 @@ export async function POST(req: Request) {
       platforms?: string[];
       analyzeOnly?: boolean;
       getSuggestionsOnly?: boolean;
-    } = await req.json()
+    } = requestBody
 
     // Security: Input validation
     if (item && item.length > MAX_TEXT_LENGTH) {
@@ -345,7 +356,7 @@ export async function POST(req: Request) {
     }
 
     // Combine identified selling points with custom point if provided
-    let allSellingPoints = [...identifiedSellingPoints];
+    let allSellingPoints: string[] = [];
     if (sanitizedCustomPoint && sanitizedCustomPoint.trim()) {
       // Split customPoint by '、' and filter out empty strings
       const customPoints = sanitizedCustomPoint.split('、')
@@ -506,9 +517,30 @@ export async function POST(req: Request) {
     }
   } catch (error) {
     safeError('Error during API call:', error)
-    // Security: Return generic error message to user
-    return NextResponse.json({ 
-      text: "服務暫時無法使用，請稍後再試" 
-    }, { status: 500 })
+    
+    // 確保總是返回有效的 JSON 響應
+    try {
+      return NextResponse.json({ 
+        text: `服務暫時無法使用: ${error instanceof Error ? error.message : String(error)}`,
+        error: true
+      }, { 
+        status: 500,
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      })
+          } catch (jsonError) {
+        // 如果連 JSON 響應都失敗，返回最基本的錯誤
+        safeError('Failed to create JSON error response:', jsonError)
+      return new Response(JSON.stringify({ 
+        text: "服務暫時無法使用，請稍後再試",
+        error: true
+      }), {
+        status: 500,
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      })
+    }
   }
 }
