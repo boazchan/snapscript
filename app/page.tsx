@@ -333,7 +333,7 @@ export default function Home() {
       let updatedText = text;
       
       // 1. 直接替換完整的商品名稱
-      const escapedOldName = oldName.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\$&');
+      const escapedOldName = oldName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
       const exactRegex = new RegExp(escapedOldName, 'g');
       updatedText = updatedText.replace(exactRegex, newName);
       
@@ -345,7 +345,7 @@ export default function Home() {
       if (oldNameParts.length > 1 && newNameParts.length > 1) {
         oldNameParts.forEach((oldPart, index) => {
           if (newNameParts[index]) {
-            const escapedOldPart = oldPart.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\$&');
+            const escapedOldPart = oldPart.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
             // 只替換獨立的詞彙，避免誤替換
             const partRegex = new RegExp(`\\b${escapedOldPart}\\b`, 'g');
             updatedText = updatedText.replace(partRegex, newNameParts[index]);
