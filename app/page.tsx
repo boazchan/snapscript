@@ -367,32 +367,25 @@ export default function Home() {
         console.log('Old hashtag cleaned:', oldHashtag);
         console.log('New hashtag cleaned:', newHashtag);
         
-        if (oldHashtag && newHashtag && oldHashtag !== newHashtag) {
-          // 逐步嘗試不同的匹配策略
-          let foundMatch = false;
-          
-          // 策略1: 精確匹配（後面跟空格、#或結尾）
+        // 記錄已處理過的hashtag，避免重複替換
+        const processedHashtags = new Set<string>();
+        
+        // 處理完整商品名稱的 hashtag
+        if (oldHashtag && newHashtag && oldHashtag !== newHashtag && !processedHashtags.has(oldHashtag)) {
+          // 優先使用精確匹配
           const exactPattern = new RegExp(`#${oldHashtag}(?=[\\s#]|$)`, 'gi');
-          const beforeExact = updatedText;
-          updatedText = updatedText.replace(exactPattern, `#${newHashtag}`);
-          if (beforeExact !== updatedText) {
+          if (exactPattern.test(updatedText)) {
+            updatedText = updatedText.replace(exactPattern, `#${newHashtag}`);
             console.log(`Exact pattern matched: #${oldHashtag} -> #${newHashtag}`);
-            foundMatch = true;
-          }
-          
-          // 策略2: 如果精確匹配失敗，使用全局匹配
-          if (!foundMatch) {
+            processedHashtags.add(oldHashtag);
+          } else {
+            // 如果精確匹配失敗，使用全局匹配
             const globalPattern = new RegExp(`#${oldHashtag}`, 'gi');
-            const beforeGlobal = updatedText;
-            updatedText = updatedText.replace(globalPattern, `#${newHashtag}`);
-            if (beforeGlobal !== updatedText) {
+            if (globalPattern.test(updatedText)) {
+              updatedText = updatedText.replace(globalPattern, `#${newHashtag}`);
               console.log(`Global pattern matched: #${oldHashtag} -> #${newHashtag}`);
-              foundMatch = true;
+              processedHashtags.add(oldHashtag);
             }
-          }
-          
-          if (!foundMatch) {
-            console.log(`No match found for hashtag: #${oldHashtag}`);
           }
         }
         
@@ -409,71 +402,24 @@ export default function Home() {
             
             console.log(`Processing part ${index}: "${cleanOldPart}" -> "${cleanNewPart}"`);
             
-                         if (cleanOldPart && cleanNewPart && cleanOldPart !== cleanNewPart) {
-               let partFoundMatch = false;
-               
-               // 策略1: 獨立hashtag匹配 (如 #Nike)
-               const independentPattern = new RegExp(`#${cleanOldPart}(?=[\\s#]|$)`, 'gi');
-               const beforeIndependent = updatedText;
-               updatedText = updatedText.replace(independentPattern, `#${cleanNewPart}`);
-               if (beforeIndependent !== updatedText) {
-                 console.log(`Independent hashtag matched: #${cleanOldPart} -> #${cleanNewPart}`);
-                 partFoundMatch = true;
-               }
-               
-               // 策略2: 複合hashtag匹配 (如 #NikeShoes)
-               const compoundPattern = new RegExp(`#([^\\s#]*?)${cleanOldPart}([^\\s#]*?)(?=[\\s#]|$)`, 'gi');
-               const beforeCompound = updatedText;
-               updatedText = updatedText.replace(compoundPattern, (match, prefix, suffix) => {
-                 const result = `#${prefix}${cleanNewPart}${suffix}`;
-                 console.log(`Compound hashtag: ${match} -> ${result}`);
-                 return result;
-               });
-               if (beforeCompound !== updatedText) {
-                 partFoundMatch = true;
-               }
-               
-               // 策略3: 如果前面都沒匹配到，使用全局匹配
-               if (!partFoundMatch) {
-                 const globalPartPattern = new RegExp(`#${cleanOldPart}`, 'gi');
-                 const beforeGlobalPart = updatedText;
-                 updatedText = updatedText.replace(globalPartPattern, `#${cleanNewPart}`);
-                 if (beforeGlobalPart !== updatedText) {
-                   console.log(`Global part pattern matched: #${cleanOldPart} -> #${cleanNewPart}`);
-                   partFoundMatch = true;
-                 }
-               }
-               
-               if (!partFoundMatch) {
-                 console.log(`No match found for part: #${cleanOldPart}`);
-               }
-             }
-          }
-        });
-        
-        // 最後的後備策略：如果所有正則表達式都失敗，嘗試簡單的字符串替換
-        console.log('Applying fallback strategy...');
-        
-        // 對完整名稱進行後備替換
-        if (oldHashtag && newHashtag && oldHashtag !== newHashtag) {
-          const simpleHashtagReplace = updatedText.replace(`#${oldHashtag}`, `#${newHashtag}`);
-          if (simpleHashtagReplace !== updatedText) {
-            console.log(`Fallback: Simple string replace worked for #${oldHashtag}`);
-            updatedText = simpleHashtagReplace;
-          }
-        }
-        
-        // 對部分名稱進行後備替換
-        oldNameParts.forEach((oldPart, index) => {
-          if (newNameParts[index] && oldPart.length > 1) {
-            const cleanOldPart = oldPart.replace(/[^a-zA-Z0-9\u4e00-\u9fff]/g, '');
-            const cleanNewPart = newNameParts[index].replace(/[^a-zA-Z0-9\u4e00-\u9fff]/g, '');
-            
-            if (cleanOldPart && cleanNewPart && cleanOldPart !== cleanNewPart) {
-              const simplePartReplace = updatedText.replace(`#${cleanOldPart}`, `#${cleanNewPart}`);
-              if (simplePartReplace !== updatedText) {
-                console.log(`Fallback: Simple string replace worked for #${cleanOldPart}`);
-                updatedText = simplePartReplace;
+            if (cleanOldPart && cleanNewPart && cleanOldPart !== cleanNewPart && !processedHashtags.has(cleanOldPart)) {
+              // 策略1: 獨立hashtag匹配 (如 #Nike)
+              const independentPattern = new RegExp(`#${cleanOldPart}(?=[\\s#]|$)`, 'gi');
+              if (independentPattern.test(updatedText)) {
+                updatedText = updatedText.replace(independentPattern, `#${cleanNewPart}`);
+                console.log(`Independent hashtag matched: #${cleanOldPart} -> #${cleanNewPart}`);
+                processedHashtags.add(cleanOldPart);
+              } else {
+                // 策略2: 複合hashtag匹配 (如 #NikeShoes 中的 Nike)
+                const compoundPattern = new RegExp(`#([^\\s#]*?)${cleanOldPart}([^\\s#]*?)(?=[\\s#]|$)`, 'gi');
+                if (compoundPattern.test(updatedText)) {
+                  updatedText = updatedText.replace(compoundPattern, (match, prefix, suffix) => {
+                    const result = `#${prefix}${cleanNewPart}${suffix}`;
+                    console.log(`Compound hashtag: ${match} -> ${result}`);
+                    return result;
+                  });
+                  processedHashtags.add(cleanOldPart);
+                }
               }
             }
           }
