@@ -4,9 +4,13 @@
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack",
-    "build": "next build",
+    "build": "next build && npm run obfuscate-build",
+    "build:secure": "NODE_ENV=production next build && npm run obfuscate-build && npm run cleanup-source-maps",
+    "obfuscate-build": "echo '🔒 代碼混淆已在 next.config.ts 中配置'",
+    "cleanup-source-maps": "find .next -name '*.map' -delete || true",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "security-check": "npm audit && echo '✅ 安全檢查完成'"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
@@ -32,8 +36,10 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "15.3.3",
+    "javascript-obfuscator": "^4.1.1",
     "tailwindcss": "^4",
     "tw-animate-css": "^1.3.4",
-    "typescript": "^5"
+    "typescript": "^5",
+    "webpack-obfuscator": "^3.5.1"
   }
 }

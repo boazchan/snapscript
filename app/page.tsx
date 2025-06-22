@@ -1092,29 +1092,30 @@ export default function Home() {
       <footer 
         style={{
           position: 'fixed',
-          bottom: '16px',
-          right: '16px',
+          bottom: '20px',
+          right: '20px',
           zIndex: 1000,
-          backgroundColor: 'rgba(255, 255, 255, 0.15)',
-          backdropFilter: 'blur(20px)',
-          borderRadius: '12px',
-          padding: '8px 12px',
-          border: '1px solid rgba(255, 255, 255, 0.2)'
+          backgroundColor: 'rgba(139, 139, 139, 0.4)',
+          backdropFilter: 'blur(12px)',
+          borderRadius: '20px',
+          padding: '10px 16px',
+          border: '1px solid rgba(255, 255, 255, 0.15)'
         }}
       >
         <p 
           style={{
             fontFamily: 'Inter',
-            fontSize: '12px',
-            fontWeight: 400,
-            lineHeight: '1.4',
-            color: '#4A5568',
+            fontSize: '13px',
+            fontWeight: 500,
+            lineHeight: '1.2',
+            color: '#FFFFFF',
             margin: '0',
-            letterSpacing: '0.3px',
-            whiteSpace: 'nowrap'
+            letterSpacing: '0.2px',
+            whiteSpace: 'nowrap',
+            textAlign: 'center'
           }}
         >
-          Built with grit and magic by the Tinker Crew from ST
+          Built with grit and magic by the Tinker Crew from BZ
         </p>
       </footer>
     </div>

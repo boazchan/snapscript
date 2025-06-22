@@ -2,6 +2,14 @@
 
 import { NextResponse } from "next/server"
 import { GoogleGenerativeAI } from "@google/generative-ai"
+import { 
+  validateEnvironment, 
+  validateOrigin, 
+  validateUserAgent, 
+  AdvancedRateLimit, 
+  detectAutomation, 
+  obfuscateError 
+} from "../../lib/security"
 
 // Access your API key as an environment variable (or directly if you must).
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
@@ -60,8 +68,55 @@ function safeError(message: string, error?: any) {
 
 export async function POST(req: Request) {
   try {
-    // Security: Rate limiting check
+    // 🔒 環境變量檢查
+    if (!validateEnvironment()) {
+      return NextResponse.json({ 
+        text: obfuscateError(new Error('Environment validation failed')) 
+      }, { status: 500 });
+    }
+
+    // 🔒 檢查請求來源
+    const origin = req.headers.get('origin');
+    if (!validateOrigin(origin)) {
+      return NextResponse.json({ 
+        text: obfuscateError(new Error('Invalid origin')) 
+      }, { status: 403 });
+    }
+
+    // 🔒 檢查 User-Agent
+    const userAgent = req.headers.get('user-agent');
+    if (!validateUserAgent(userAgent)) {
+      return NextResponse.json({ 
+        text: obfuscateError(new Error('Invalid user agent')) 
+      }, { status: 403 });
+    }
+
+    // 🔒 檢測自動化請求 (暫時禁用 - 避免誤判正常請求)
+    // if (detectAutomation(req.headers as Headers)) {
+    //   return NextResponse.json({ 
+    //     text: obfuscateError(new Error('Automation detected')) 
+    //   }, { status: 403 });
+    // }
+
+    // 🔒 進階頻率限制
     const rateLimitKey = getRateLimitKey(req);
+    const rateLimit = AdvancedRateLimit.checkLimit(rateLimitKey, 10, 60000, 300000);
+    
+    if (!rateLimit.allowed) {
+      return NextResponse.json({ 
+        text: AdvancedRateLimit.isSuspicious(rateLimitKey) 
+          ? "您的 IP 已被暫時封鎖，請稍後再試" 
+          : "請求過於頻繁，請稍後再試" 
+      }, { 
+        status: 429,
+        headers: {
+          'X-RateLimit-Remaining': rateLimit.remaining.toString(),
+          'X-RateLimit-Reset': new Date(rateLimit.resetTime).toISOString(),
+        }
+      });
+    }
+
+    // Security: Rate limiting check (保留原有的檢查作為雙重保險)
     if (!checkRateLimit(rateLimitKey)) {
       return NextResponse.json({ 
         text: "請求過於頻繁，請稍後再試" 
@@ -200,9 +255,6 @@ export async function POST(req: Request) {
             .map((sp: string) => sp.trim().substring(0, 50))
             .filter((sp: string) => sp.length > 0)
             .slice(0, 10) : []; // Limit to max 10 selling points
-        
-        // Always add "限時優惠" as a fixed option for image analysis results
-        identifiedSellingPoints.push("限時優惠");
 
       } catch (e) {
         safeError("Failed to get or parse vision API response from Gemini:", e);
@@ -273,9 +325,6 @@ export async function POST(req: Request) {
             .filter((sp: string) => sp.length > 0)
             .slice(0, 10) : [];
 
-        // Always add "限時優惠" as a fixed option
-        identifiedSellingPoints.push("限時優惠");
-
         return NextResponse.json({ 
           selling_points: identifiedSellingPoints 
         });
@@ -283,7 +332,7 @@ export async function POST(req: Request) {
       } catch (e) {
         safeError("Failed to get or parse suggestion API response from Gemini:", e);
         return NextResponse.json({ 
-          selling_points: ["限時優惠"] 
+          selling_points: [] 
         });
       }
     }
@@ -305,17 +354,6 @@ export async function POST(req: Request) {
         .slice(0, 20); // Limit custom points
       allSellingPoints.push(...customPoints);
     }
-    
-    // Remove "限時優惠" from identifiedSellingPoints since it's only for suggestion, not auto-inclusion
-    // But keep it if it was explicitly selected by user in customPoint
-    allSellingPoints = allSellingPoints.filter(point => {
-      if (point === "限時優惠") {
-        // Keep "限時優惠" only if it was explicitly selected by user
-        return sanitizedCustomPoint && sanitizedCustomPoint.includes("限時優惠");
-      }
-      return true;
-    });
-
     // Security: Limit total selling points
     allSellingPoints = allSellingPoints.slice(0, 15);
 
@@ -344,7 +382,11 @@ export async function POST(req: Request) {
 - Hashtag：文末加入 3-6 個相關 hashtag，避免過度熱門標籤
 
 【促銷規範】：
-只有當產品賣點明確包含促銷資訊時，才可融入促銷內容。
+嚴格遵守以下規則：
+- 絕對不可自行添加任何促銷字眼（如：限時優惠、特價、折扣、打折、85折、促銷、特惠等）
+- 只能使用產品賣點中明確提供的促銷資訊
+- 如果產品賣點中沒有任何促銷字眼，則完全不得在文案中提及任何促銷內容
+- 如果產品賣點中有促銷字眼，可以適當融入文案中
 
 【輸入資訊】：
 - 語氣風格：${selectedTone}
@@ -366,7 +408,11 @@ export async function POST(req: Request) {
 - 風格：敘事感強，流暢自然，適合帶入使用者故事
 
 【促銷規範】：
-只有當產品賣點明確包含促銷資訊時，才可融入促銷內容。
+嚴格遵守以下規則：
+- 絕對不可自行添加任何促銷字眼（如：限時優惠、特價、折扣、打折、85折、促銷、特惠等）
+- 只能使用產品賣點中明確提供的促銷資訊
+- 如果產品賣點中沒有任何促銷字眼，則完全不得在文案中提及任何促銷內容
+- 如果產品賣點中有促銷字眼，可以適當融入文案中
 
 【輸入資訊】：
 - 語氣風格：${selectedTone}
@@ -389,7 +435,11 @@ export async function POST(req: Request) {
 - 格式：純文字輸出，不使用任何 Markdown 格式（如 **粗體**、*斜體* 等）
 
 【促銷規範】：
-只有當產品賣點明確包含促銷資訊時，才可融入促銷內容。
+嚴格遵守以下規則：
+- 絕對不可自行添加任何促銷字眼（如：限時優惠、特價、折扣、打折、85折、促銷、特惠等）
+- 只能使用產品賣點中明確提供的促銷資訊
+- 如果產品賣點中沒有任何促銷字眼，則完全不得在文案中提及任何促銷內容
+- 如果產品賣點中有促銷字眼，可以適當融入文案中
 
 【輸入資訊】：
 - 語氣風格：${selectedTone}

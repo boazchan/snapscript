@@ -1,5 +1,6 @@
 import type { Metadata } from "next"
 import { Geist, Geist_Mono } from "next/font/google"
+import SecurityWrapper from "./components/SecurityWrapper"
 import "./globals.css"
 
 const geistSans = Geist({
@@ -52,7 +53,9 @@ export default function RootLayout({
         }}
         suppressHydrationWarning={true}
       >
-        {children}
+        <SecurityWrapper>
+          {children}
+        </SecurityWrapper>
       </body>
     </html>
   )
