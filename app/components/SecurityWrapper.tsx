@@ -71,20 +71,20 @@ export default function SecurityWrapper({ children }: SecurityWrapperProps) {
       }
     }
 
-    // 檢測控制台使用
-    let consoleWarningShown = false
-    const originalConsole = { ...console }
+    // 檢測控制台使用 - 暫時禁用以避免開發日誌觸發
+    // let consoleWarningShown = false
+    // const originalConsole = { ...console }
     
-    ;(['log', 'debug', 'info', 'warn', 'error'] as const).forEach(method => {
-      console[method] = function(...args: any[]) {
-        if (!consoleWarningShown) {
-          consoleWarningShown = true
-          setIsBlocked(true)
-          setTimeout(() => setIsBlocked(false), 3000)
-        }
-        return originalConsole[method].apply(console, args)
-      }
-    })
+    // ;(['log', 'debug', 'info', 'warn', 'error'] as const).forEach(method => {
+    //   console[method] = function(...args: any[]) {
+    //     if (!consoleWarningShown) {
+    //       consoleWarningShown = true
+    //       setIsBlocked(true)
+    //       setTimeout(() => setIsBlocked(false), 3000)
+    //     }
+    //     return originalConsole[method].apply(console, args)
+    //   }
+    // })
 
     // 防止選取文字
     const handleSelectStart = (e: Event) => {
@@ -111,10 +111,10 @@ export default function SecurityWrapper({ children }: SecurityWrapperProps) {
       document.removeEventListener('selectstart', handleSelectStart)
       document.removeEventListener('dragstart', handleDragStart)
       
-      // 恢復原始 console
-      ;(['log', 'debug', 'info', 'warn', 'error'] as const).forEach(method => {
-        console[method] = originalConsole[method]
-      })
+      // 恢復原始 console - 暫時禁用
+      // ;(['log', 'debug', 'info', 'warn', 'error'] as const).forEach(method => {
+      //   console[method] = originalConsole[method]
+      // })
     }
   }, [])
 
