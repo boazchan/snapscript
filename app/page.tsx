@@ -1115,7 +1115,7 @@ export default function Home() {
             textAlign: 'center'
           }}
         >
-          Built with grit and magic by the Tinker Crew from BZ
+          version 1.0｜Built with grit and magic by the Tinker Crew from BZ
         </p>
       </footer>
     </div>
