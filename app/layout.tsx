@@ -1,4 +1,4 @@
-import type { Metadata } from "next"
+import type { Metadata, Viewport } from "next"
 import { Geist, Geist_Mono } from "next/font/google"
 import SecurityWrapper from "./components/SecurityWrapper"
 import "./globals.css"
@@ -33,6 +33,13 @@ export const metadata: Metadata = {
     index: true,
     follow: true,
   },
+}
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false, // 防止用戶縮放，但這可能影響可訪問性
 }
 
 export default function RootLayout({

@@ -700,7 +700,7 @@ export default function Home() {
                     padding: '10px',
                     height: '48px',
                     fontFamily: 'Inter',
-                    fontSize: '14px',
+                    fontSize: '16px', // 改為 16px 以防止手機瀏覽器自動放大
                     color: isAnalyzingImage ? '#9245E5' : '#000000',
                     flex: 1,
                     minWidth: '200px', // 最小寬度
@@ -762,7 +762,7 @@ export default function Home() {
                     maxWidth: '300px', // 最大寬度限制
                     height: '48px',
                     fontFamily: 'Nunito Sans',
-                    fontSize: '14px',
+                    fontSize: '16px', // 改為 16px 以防止手機瀏覽器自動放大
                     color: '#000000'
                   }}
                 >
@@ -800,7 +800,7 @@ export default function Home() {
                   padding: '10px',
                   height: '48px',
                   fontFamily: 'Inter',
-                  fontSize: '14px',
+                  fontSize: '16px', // 改為 16px 以防止手機瀏覽器自動放大
                   color: '#000000',
                   width: '100%'
                 }}
@@ -1240,7 +1240,7 @@ export default function Home() {
                             borderRadius: '6px',
                             padding: '10px',
                             fontFamily: 'Inter',
-                            fontSize: 'clamp(12px, 1.2vw, 14px)',
+                            fontSize: 'clamp(16px, 1.2vw, 18px)', // 改為 16px 起始以防止手機瀏覽器自動放大
                             fontWeight: 400,
                             lineHeight: '1.6',
                             color: '#374151',
