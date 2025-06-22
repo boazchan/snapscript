@@ -189,6 +189,7 @@ export async function POST(req: Request) {
 
     let identifiedProductName: string = sanitizedItem || ""
     let identifiedSellingPoints: string[] = []
+    let aiDetectedProductName: string = "" // 用於存儲 AI 分析的產品名稱
     let platformResults: {[key: string]: string} = {}
 
     // --- Step 1: Identify Product Name and Selling Points from Image (if image is provided) ---
@@ -260,7 +261,11 @@ export async function POST(req: Request) {
 
         // Try to parse the JSON output from Gemini
         const parsedVisionContent = JSON.parse(textContent);
-        identifiedProductName = parsedVisionContent.item?.trim().substring(0, MAX_TEXT_LENGTH) || "";
+        aiDetectedProductName = parsedVisionContent.item?.trim().substring(0, MAX_TEXT_LENGTH) || "";
+        
+        // 優先使用用戶輸入的商品名稱，如果沒有才使用 AI 分析結果
+        identifiedProductName = sanitizedItem || aiDetectedProductName;
+        
         identifiedSellingPoints = Array.isArray(parsedVisionContent.selling_points) ? 
           parsedVisionContent.selling_points
             .map((sp: string) => sp.trim().substring(0, 50))
@@ -283,7 +288,7 @@ export async function POST(req: Request) {
       // If analyzeOnly is true, return only the analysis results
       if (analyzeOnly) {
         return NextResponse.json({ 
-          product_name: identifiedProductName, 
+          product_name: aiDetectedProductName, // 分析模式下返回 AI 分析結果，不使用用戶輸入
           selling_points: identifiedSellingPoints 
         })
       }

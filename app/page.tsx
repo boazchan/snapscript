@@ -128,6 +128,7 @@ export default function Home() {
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({
                 image: base64Image,
+                item: input.trim() || undefined, // 如果用戶有輸入，優先使用用戶的輸入
                 tone,
                 customPoint,
                 platforms: selectedPlatforms,
@@ -155,8 +156,11 @@ export default function Home() {
               return;
             }
           if (data.product_name) {
-            setInput(data.product_name) // Populate input with AI-detected name
-            setProductNameUsedInOriginalCopy(data.product_name)
+            // 只有當用戶沒有手動輸入時，才使用 AI 分析的產品名稱
+            const finalProductName = input.trim() || data.product_name;
+            setInput(finalProductName);
+            setProductNameUsedInOriginalCopy(finalProductName);
+            
             if (data.platform_results) {
               setPlatformResults(data.platform_results)
               // For backward compatibility, set original and display copy to the first platform result
