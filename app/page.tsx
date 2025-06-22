@@ -437,12 +437,31 @@ export default function Home() {
     // Update platform results if they exist
     if (Object.keys(platformResults).length > 0) {
       const updatedPlatformResults: {[key: string]: string} = {};
+      const updatedEditingTexts: {[key: string]: string} = {};
+      
       Object.entries(platformResults).forEach(([platform, text]) => {
         const isInstagram = platform === 'instagram';
-        updatedPlatformResults[platform] = smartReplace(text, productNameUsedInOriginalCopy, input, isInstagram);
-        console.log(`Updated ${platform} copy:`, updatedPlatformResults[platform]);
+        
+        // 決定要更新的文本來源：如果用戶編輯過，使用編輯的文本；否則使用原始文本
+        const sourceText = editingTexts[platform] !== undefined ? editingTexts[platform] : text;
+        const updatedText = smartReplace(sourceText, productNameUsedInOriginalCopy, input, isInstagram);
+        
+        updatedPlatformResults[platform] = updatedText;
+        
+        // 如果用戶編輯過這個平台的文案，也要更新 editingTexts
+        if (editingTexts[platform] !== undefined) {
+          updatedEditingTexts[platform] = updatedText;
+        }
+        
+        console.log(`Updated ${platform} copy:`, updatedText);
       });
+      
       setPlatformResults(updatedPlatformResults);
+      
+      // 更新編輯文本狀態
+      if (Object.keys(updatedEditingTexts).length > 0) {
+        setEditingTexts(prev => ({ ...prev, ...updatedEditingTexts }));
+      }
       
       // Also update the first platform result for backward compatibility
       const firstPlatformResult = Object.values(updatedPlatformResults)[0] || "";
@@ -568,34 +587,7 @@ export default function Home() {
     setCopyButtonHover(prev => ({ ...prev, [platform]: false }));
   }
 
-  // 編輯相關處理函數
-  const handleEditStart = (platform: string, text: string) => {
-    setEditingStates(prev => ({ ...prev, [platform]: true }))
-    setEditingTexts(prev => ({ ...prev, [platform]: text }))
-  }
-
-  const handleEditCancel = (platform: string) => {
-    setEditingStates(prev => ({ ...prev, [platform]: false }))
-    setEditingTexts(prev => ({ ...prev, [platform]: '' }))
-  }
-
-  const handleEditSave = (platform: string) => {
-    const newText = editingTexts[platform]
-    if (newText !== undefined) {
-      // 更新對應平台的文案
-      setPlatformResults(prev => ({ ...prev, [platform]: newText }))
-      
-      // 如果是第一個平台結果，也更新向後兼容的狀態
-      if (Object.keys(platformResults).indexOf(platform) === 0) {
-        setOriginalCopy(newText)
-        setDisplayCopy(newText)
-      }
-    }
-    
-    setEditingStates(prev => ({ ...prev, [platform]: false }))
-    setEditingTexts(prev => ({ ...prev, [platform]: '' }))
-  }
-
+  // 編輯相關處理函數 - 簡化版
   const handleEditTextChange = (platform: string, value: string) => {
     setEditingTexts(prev => ({ ...prev, [platform]: value }))
   }
@@ -1227,194 +1219,89 @@ export default function Home() {
                           </span>
                         </div>
 
-                        {/* 文案內容區域 */}
-                        {editingStates[platform] ? (
-                          <textarea
-                            value={editingTexts[platform] || text}
-                            onChange={(e) => handleEditTextChange(platform, e.target.value)}
-                            style={{
-                              flex: 1,
-                              backgroundColor: '#FFFFFF',
-                              border: '1px solid #9245E5',
-                              borderRadius: '6px',
-                              padding: '10px',
-                              fontFamily: 'Inter',
-                              fontSize: 'clamp(12px, 1.2vw, 14px)',
-                              fontWeight: 400,
-                              lineHeight: '1.6',
-                              color: '#374151',
-                              resize: 'none',
-                              outline: 'none',
-                              wordBreak: 'break-word'
-                            }}
-                            placeholder="編輯您的文案..."
-                          />
-                        ) : (
-                          <div 
-                            style={{
-                              flex: 1,
-                              backgroundColor: '#F7F8FA',
-                              borderRadius: '6px',
-                              padding: '10px',
-                              fontFamily: 'Inter',
-                              fontSize: 'clamp(12px, 1.2vw, 14px)',
-                              fontWeight: 400,
-                              lineHeight: '1.6',
-                              color: '#374151',
-                              whiteSpace: 'pre-wrap',
-                              overflow: 'auto',
-                              wordBreak: 'break-word',
-                              cursor: 'pointer'
-                            }}
-                            onClick={() => handleEditStart(platform, text)}
-                            title="點擊編輯文案"
-                          >
-                            {text}
-                          </div>
-                        )}
+                        {/* 文案內容區域 - 直接可編輯 */}
+                        <textarea
+                          value={editingTexts[platform] !== undefined ? editingTexts[platform] : text}
+                          onChange={(e) => {
+                            handleEditTextChange(platform, e.target.value);
+                            // 即時更新文案內容
+                            setPlatformResults(prev => ({ ...prev, [platform]: e.target.value }));
+                            
+                            // 如果是第一個平台結果，也更新向後兼容的狀態
+                            if (Object.keys(platformResults).indexOf(platform) === 0) {
+                              setOriginalCopy(e.target.value);
+                              setDisplayCopy(e.target.value);
+                            }
+                          }}
+                          style={{
+                            flex: 1,
+                            backgroundColor: '#FFFFFF',
+                            border: '1px solid #E5E7EB',
+                            borderRadius: '6px',
+                            padding: '10px',
+                            fontFamily: 'Inter',
+                            fontSize: 'clamp(12px, 1.2vw, 14px)',
+                            fontWeight: 400,
+                            lineHeight: '1.6',
+                            color: '#374151',
+                            resize: 'none',
+                            outline: 'none',
+                            wordBreak: 'break-word',
+                            transition: 'border-color 0.2s ease'
+                          }}
+                          onFocus={(e) => {
+                            e.target.style.borderColor = '#9245E5';
+                          }}
+                          onBlur={(e) => {
+                            e.target.style.borderColor = '#E5E7EB';
+                          }}
+                          placeholder="您的文案將顯示在這裡，可以直接編輯..."
+                        />
 
-                        {/* 按鈕區域 */}
+                        {/* 按鈕區域 - 簡化版 */}
                         <div style={{ 
                           display: 'flex', 
                           alignItems: 'flex-end',
-                          justifyContent: 'stretch',
-                          gap: '8px'
+                          justifyContent: 'stretch'
                         }}>
-                          {editingStates[platform] ? (
-                            <>
-                              {/* 保存按鈕 */}
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => handleEditSave(platform)}
-                                style={{
-                                  backgroundColor: '#22C55E',
-                                  borderWidth: '1px',
-                                  borderStyle: 'solid',
-                                  borderColor: '#22C55E',
-                                  borderRadius: '6px',
-                                  padding: '8px 16px',
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  justifyContent: 'center',
-                                  gap: '4px',
-                                  fontSize: '14px',
-                                  fontWeight: 500,
-                                  color: '#FFFFFF',
-                                  cursor: 'pointer',
-                                  flex: 1,
-                                  transition: 'all 0.2s ease'
-                                }}
-                              >
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                                  <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z" fill="#FFFFFF"/>
-                                </svg>
-                                <span>保存</span>
-                              </Button>
-                              
-                              {/* 取消按鈕 */}
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => handleEditCancel(platform)}
-                                style={{
-                                  backgroundColor: '#EF4444',
-                                  borderWidth: '1px',
-                                  borderStyle: 'solid',
-                                  borderColor: '#EF4444',
-                                  borderRadius: '6px',
-                                  padding: '8px 16px',
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  justifyContent: 'center',
-                                  gap: '4px',
-                                  fontSize: '14px',
-                                  fontWeight: 500,
-                                  color: '#FFFFFF',
-                                  cursor: 'pointer',
-                                  flex: 1,
-                                  transition: 'all 0.2s ease'
-                                }}
-                              >
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                                  <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41z" fill="#FFFFFF"/>
-                                </svg>
-                                <span>取消</span>
-                              </Button>
-                            </>
-                          ) : (
-                            <>
-                              {/* 編輯按鈕 */}
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => handleEditStart(platform, text)}
-                                style={{
-                                  backgroundColor: '#F59E0B',
-                                  borderWidth: '1px',
-                                  borderStyle: 'solid',
-                                  borderColor: '#F59E0B',
-                                  borderRadius: '6px',
-                                  padding: '8px 16px',
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  justifyContent: 'center',
-                                  gap: '4px',
-                                  fontSize: '14px',
-                                  fontWeight: 500,
-                                  color: '#FFFFFF',
-                                  cursor: 'pointer',
-                                  flex: 1,
-                                  transition: 'all 0.2s ease'
-                                }}
-                              >
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                                  <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z" fill="#FFFFFF"/>
-                                </svg>
-                                <span>編輯</span>
-                              </Button>
-                              
-                              {/* 複製按鈕 */}
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => handleCopyText(platform, text)}
-                                onMouseEnter={() => handleCopyButtonMouseEnter(platform)}
-                                onMouseLeave={() => handleCopyButtonMouseLeave(platform)}
-                                style={{
-                                  backgroundColor: copyButtonHover[platform] ? '#9245E5' : '#EDE6F8',
-                                  borderWidth: '1px',
-                                  borderStyle: 'solid',
-                                  borderColor: copyButtonHover[platform] ? '#9245E5' : '#EDE6F8',
-                                  borderRadius: '6px',
-                                  padding: '8px 16px',
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  justifyContent: 'center',
-                                  gap: '4px',
-                                  fontSize: '14px',
-                                  fontWeight: 500,
-                                  color: copyButtonHover[platform] ? '#FFFFFF' : '#9245E5',
-                                  cursor: 'pointer',
-                                  flex: 1,
-                                  transition: 'all 0.2s ease'
-                                }}
-                              >
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                                  <path d="M16 1H4C2.9 1 2 1.9 2 3V17H4V3H16V1ZM19 5H8C6.9 5 6 5.9 6 7V21C6 22.1 6.9 23 8 23H19C20.1 23 21 22.1 21 21V7C21 5.9 20.1 5 19 5ZM19 21H8V7H19V21Z" fill={copyButtonHover[platform] ? '#FFFFFF' : '#9245E5'}/>
-                                </svg>
-                                <span style={{
-                                  opacity: 1,
-                                  transition: 'opacity 1s ease',
-                                  minWidth: '60px',
-                                  display: 'inline-block',
-                                  textAlign: 'center'
-                                }}>
-                                  {copiedStates[platform] ? '已複製' : '複製'}
-                                </span>
-                              </Button>
-                            </>
-                          )}
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleCopyText(platform, editingTexts[platform] !== undefined ? editingTexts[platform] : text)}
+                            onMouseEnter={() => handleCopyButtonMouseEnter(platform)}
+                            onMouseLeave={() => handleCopyButtonMouseLeave(platform)}
+                            style={{
+                              backgroundColor: copyButtonHover[platform] ? '#9245E5' : '#EDE6F8',
+                              borderWidth: '1px',
+                              borderStyle: 'solid',
+                              borderColor: copyButtonHover[platform] ? '#9245E5' : '#EDE6F8',
+                              borderRadius: '6px',
+                              padding: '8px 16px',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              gap: '4px',
+                              fontSize: '14px',
+                              fontWeight: 500,
+                              color: copyButtonHover[platform] ? '#FFFFFF' : '#9245E5',
+                              cursor: 'pointer',
+                              width: '100%',
+                              transition: 'all 0.2s ease'
+                            }}
+                          >
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                              <path d="M16 1H4C2.9 1 2 1.9 2 3V17H4V3H16V1ZM19 5H8C6.9 5 6 5.9 6 7V21C6 22.1 6.9 23 8 23H19C20.1 23 21 22.1 21 21V7C21 5.9 20.1 5 19 5ZM19 21H8V7H19V21Z" fill={copyButtonHover[platform] ? '#FFFFFF' : '#9245E5'}/>
+                            </svg>
+                            <span style={{
+                              opacity: 1,
+                              transition: 'opacity 1s ease',
+                              minWidth: '60px',
+                              display: 'inline-block',
+                              textAlign: 'center'
+                            }}>
+                              {copiedStates[platform] ? '已複製' : '複製文案'}
+                            </span>
+                          </Button>
                         </div>
                       </div>
                     );
