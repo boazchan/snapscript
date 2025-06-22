@@ -2,7 +2,7 @@ import crypto from 'crypto';
 
 // 環境檢查
 export function validateEnvironment(): boolean {
-  const requiredEnvVars = ['GEMINI_API_KEY'];
+  const requiredEnvVars = ['GOOGLE_AI_API_KEY'];
   return requiredEnvVars.every(envVar => process.env[envVar]);
 }
 

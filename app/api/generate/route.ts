@@ -12,7 +12,7 @@ import {
 } from "../../lib/security"
 
 // Access your API key as an environment variable (or directly if you must).
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
+const genAI = new GoogleGenerativeAI(process.env.GOOGLE_AI_API_KEY!);
 
 // Security: Input validation constants
 const MAX_IMAGE_SIZE = 10 * 1024 * 1024; // 10MB in bytes
