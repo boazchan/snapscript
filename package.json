@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --turbopack",
+    "dev": "next dev",
     "build": "next build && npm run obfuscate-build",
     "build:secure": "NODE_ENV=production next build && npm run obfuscate-build && npm run cleanup-source-maps",
     "obfuscate-build": "echo '🔒 代碼混淆已在 next.config.ts 中配置'",
