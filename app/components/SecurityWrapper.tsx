@@ -11,6 +11,9 @@ export default function SecurityWrapper({ children }: SecurityWrapperProps) {
   const [isBlocked, setIsBlocked] = useState(false)
 
   useEffect(() => {
+    // 暫時完全禁用安全檢測，避免誤判影響用戶體驗
+    return
+    
     // 只在生產環境啟用安全檢查
     if (process.env.NODE_ENV !== 'production') {
       return
@@ -21,7 +24,7 @@ export default function SecurityWrapper({ children }: SecurityWrapperProps) {
       orientation: null as string | null
     }
 
-    // 檢測開發者工具
+    // 檢測開發者工具 - 暫時禁用
     const threshold = 160
     setInterval(() => {
       const widthThreshold = window.outerWidth - window.innerWidth > threshold
