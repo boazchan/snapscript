@@ -549,6 +549,63 @@ footer {
 }
 
 .ai-suggestion-chip:hover {
-  background-color: rgba(146, 69, 229, 0.15) !important;
-  transform: translateY(-1px);
+  background-color: #8B3EFF;
+  color: #FFFFFF;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(139, 62, 255, 0.3);
+}
+
+/* 邀請碼 Popup 動畫 */
+@keyframes fadeInScale {
+  0% {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes shake {
+  0%, 100% {
+    transform: translateX(0);
+  }
+  10%, 30%, 50%, 70%, 90% {
+    transform: translateX(-5px);
+  }
+  20%, 40%, 60%, 80% {
+    transform: translateX(5px);
+  }
+}
+
+/* Popup 覆盖层进入动画 */
+@keyframes fadeIn {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+/* 為邀請碼 popup 添加響應式支持 */
+@media (max-width: 480px) {
+  .invite-popup-container {
+    padding: 24px;
+    max-width: 90%;
+  }
+  
+  .invite-popup-title {
+    font-size: 24px;
+  }
+  
+  .invite-popup-subtitle {
+    font-size: 14px;
+  }
+  
+  .invite-popup-input {
+    font-size: 14px;
+    letter-spacing: 1px;
+  }
 }

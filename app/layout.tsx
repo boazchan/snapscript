@@ -1,17 +1,18 @@
 import type { Metadata, Viewport } from "next"
-import { Geist, Geist_Mono } from "next/font/google"
+// import { Geist, Geist_Mono } from "next/font/google" // 暫時禁用以修復構建問題
 import SecurityWrapper from "./components/SecurityWrapper"
 import "./globals.css"
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-})
+// 暫時使用系統字體以修復構建問題
+// const geistSans = Geist({
+//   variable: "--font-geist-sans",
+//   subsets: ["latin"],
+// })
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-})
+// const geistMono = Geist_Mono({
+//   variable: "--font-geist-mono",
+//   subsets: ["latin"],
+// })
 
 export const metadata: Metadata = {
   title: "SnapScript Beta",
@@ -50,7 +51,7 @@ export default function RootLayout({
   return (
     <html lang="zh-TW">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen`}
+        className="antialiased min-h-screen font-sans"
         style={{
           backgroundImage: 'url(/background.png)',
           backgroundSize: 'cover',

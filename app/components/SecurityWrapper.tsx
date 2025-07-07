@@ -11,10 +11,7 @@ export default function SecurityWrapper({ children }: SecurityWrapperProps) {
   const [isBlocked, setIsBlocked] = useState(false)
 
   useEffect(() => {
-    // 暫時完全禁用安全檢測，避免誤判影響用戶體驗
-    return
-    
-    // 只在生產環境啟用安全檢查
+    // 只在生產環境啟用安全檢查 - 已優化用戶體驗
     if (process.env.NODE_ENV !== 'production') {
       return
     }
@@ -47,31 +44,37 @@ export default function SecurityWrapper({ children }: SecurityWrapperProps) {
       }
     }, 500)
 
-    // 防止右鍵菜單
+    // 防止右鍵菜單 - 僅在生產環境啟用
     const handleContextMenu = (e: MouseEvent) => {
-      e.preventDefault()
-      return false
+      if (process.env.NODE_ENV === 'production') {
+        e.preventDefault()
+        return false
+      }
+      return true
     }
 
-    // 防止常見的開發者快捷鍵
+    // 防止常見的開發者快捷鍵 - 僅在生產環境啟用
     const handleKeyDown = (e: KeyboardEvent) => {
-      // F12
-      if (e.keyCode === 123) {
-        e.preventDefault()
-        return false
+      if (process.env.NODE_ENV === 'production') {
+        // F12
+        if (e.keyCode === 123) {
+          e.preventDefault()
+          return false
+        }
+        
+        // Ctrl+Shift+I, Ctrl+Shift+C, Ctrl+Shift+J
+        if (e.ctrlKey && e.shiftKey && (e.keyCode === 73 || e.keyCode === 67 || e.keyCode === 74)) {
+          e.preventDefault()
+          return false
+        }
+        
+        // Ctrl+U
+        if (e.ctrlKey && e.keyCode === 85) {
+          e.preventDefault()
+          return false
+        }
       }
-      
-      // Ctrl+Shift+I, Ctrl+Shift+C, Ctrl+Shift+J
-      if (e.ctrlKey && e.shiftKey && (e.keyCode === 73 || e.keyCode === 67 || e.keyCode === 74)) {
-        e.preventDefault()
-        return false
-      }
-      
-      // Ctrl+U
-      if (e.ctrlKey && e.keyCode === 85) {
-        e.preventDefault()
-        return false
-      }
+      return true
     }
 
     // 檢測控制台使用 - 暫時禁用以避免開發日誌觸發
@@ -89,16 +92,22 @@ export default function SecurityWrapper({ children }: SecurityWrapperProps) {
     //   }
     // })
 
-    // 防止選取文字
+    // 防止選取文字 - 僅在生產環境啟用
     const handleSelectStart = (e: Event) => {
-      e.preventDefault()
-      return false
+      if (process.env.NODE_ENV === 'production') {
+        e.preventDefault()
+        return false
+      }
+      return true
     }
 
-    // 防止拖拽
+    // 防止拖拽 - 僅在生產環境啟用
     const handleDragStart = (e: DragEvent) => {
-      e.preventDefault()
-      return false
+      if (process.env.NODE_ENV === 'production') {
+        e.preventDefault()
+        return false
+      }
+      return true
     }
 
     // 添加事件監聽器
@@ -121,21 +130,21 @@ export default function SecurityWrapper({ children }: SecurityWrapperProps) {
     }
   }, [])
 
-  // 開發者工具檢測警告
-  if (isDevToolsOpen && process.env.NODE_ENV === 'production') {
-    return (
-      <div className="min-h-screen bg-red-900 flex items-center justify-center">
-        <div className="text-center text-white p-8">
-          <h1 className="text-4xl font-bold mb-4">⚠️ 安全警告</h1>
-          <p className="text-xl mb-4">檢測到開發者工具已開啟</p>
-          <p className="text-lg opacity-80">請關閉開發者工具以繼續使用</p>
-          <div className="mt-8">
-            <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-white mx-auto"></div>
-          </div>
-        </div>
-      </div>
-    )
-  }
+  // 開發者工具檢測警告 - 暫時禁用以改善用戶體驗
+  // if (isDevToolsOpen && process.env.NODE_ENV === 'production') {
+  //   return (
+  //     <div className="min-h-screen bg-red-900 flex items-center justify-center">
+  //       <div className="text-center text-white p-8">
+  //         <h1 className="text-4xl font-bold mb-4">⚠️ 安全警告</h1>
+  //         <p className="text-xl mb-4">檢測到開發者工具已開啟</p>
+  //         <p className="text-lg opacity-80">請關閉開發者工具以繼續使用</p>
+  //         <div className="mt-8">
+  //           <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-white mx-auto"></div>
+  //         </div>
+  //       </div>
+  //     </div>
+  //   )
+  // }
 
   // 控制台使用警告
   if (isBlocked) {

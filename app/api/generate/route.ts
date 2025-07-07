@@ -19,10 +19,10 @@ const MAX_IMAGE_SIZE = 10 * 1024 * 1024; // 10MB in bytes
 const MAX_TEXT_LENGTH = 200;
 const MAX_CUSTOM_POINT_LENGTH = 500;
 
-// Security: Simple rate limiting (in-memory, for basic protection)
+// Security: Simple rate limiting (in-memory, for basic protection) - 已放寬限制
 const requestCounts = new Map<string, { count: number; resetTime: number }>();
 const RATE_LIMIT_WINDOW = 60 * 1000; // 1 minute
-const MAX_REQUESTS_PER_WINDOW = 10;
+const MAX_REQUESTS_PER_WINDOW = 30; // 從 10 提升到 30
 
 function getRateLimitKey(req: Request): string {
   // Use IP address for rate limiting (fallback to user-agent if no IP)
@@ -99,23 +99,23 @@ export async function POST(req: Request) {
     //   }, { status: 403 });
     // }
 
-    // 🔒 進階頻率限制 - 暫時禁用
-    // const rateLimitKey = getRateLimitKey(req);
-    // const rateLimit = AdvancedRateLimit.checkLimit(rateLimitKey, 50, 60000, 300000);
+    // 🔒 進階頻率限制 - 已放寬限制
+    const rateLimitKey = getRateLimitKey(req);
+    const rateLimit = AdvancedRateLimit.checkLimit(rateLimitKey, 50, 60000, 60000); // 封鎖時間從 5分鐘 改為 1分鐘
     
-    // if (!rateLimit.allowed) {
-    //   return NextResponse.json({ 
-    //     text: AdvancedRateLimit.isSuspicious(rateLimitKey) 
-    //       ? "您的 IP 已被暫時封鎖，請稍後再試" 
-    //       : "請求過於頻繁，請稍後再試" 
-    //   }, { 
-    //     status: 429,
-    //     headers: {
-    //       'X-RateLimit-Remaining': rateLimit.remaining.toString(),
-    //       'X-RateLimit-Reset': new Date(rateLimit.resetTime).toISOString(),
-    //     }
-    //   });
-    // }
+    if (!rateLimit.allowed) {
+      return NextResponse.json({ 
+        text: AdvancedRateLimit.isSuspicious(rateLimitKey) 
+          ? "您的 IP 已被暫時封鎖，請稍後再試" 
+          : "請求過於頻繁，請稍後再試" 
+      }, { 
+        status: 429,
+        headers: {
+          'X-RateLimit-Remaining': rateLimit.remaining.toString(),
+          'X-RateLimit-Reset': new Date(rateLimit.resetTime).toISOString(),
+        }
+      });
+    }
 
     // Security: Rate limiting check (保留原有的檢查作為雙重保險) - 暫時禁用
     // if (!checkRateLimit(rateLimitKey)) {

@@ -35,12 +35,281 @@ export default function Home() {
   const [editingStates, setEditingStates] = useState<{[key: string]: boolean}>({}) // 追蹤每個平台的編輯狀態
   const [editingTexts, setEditingTexts] = useState<{[key: string]: string}>({}) // 存儲編輯中的文案
 
+  // 邀請碼相關狀態
+  const [showInvitePopup, setShowInvitePopup] = useState(false)
+  const [inviteCode, setInviteCode] = useState("")
+  const [inviteCodeError, setInviteCodeError] = useState("")
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true)
+
+  // 邀請碼列表 - 可以添加多個有效邀請碼
+  const VALID_INVITE_CODES = [
+    {
+      code: "SNAPSCRIPT2024",
+      description: "主要邀請碼"
+    },
+    {
+      code: "ADMIN2024",
+      description: "管理員專用"
+    },
+    {
+      code: "VIP2024",
+      description: "VIP用戶"
+    },
+    {
+      code: "BETA2024", 
+      description: "測試用戶"
+    },
+    {
+      code: "TEAM2024",
+      description: "團隊成員"
+    },
+    {
+      code: "TESTING",
+      description: "TESTING"
+    },
+    {
+      code: "楊桃樹下",
+      description: "TESTING2"
+    },
+    // 新增的 VIP 邀請碼
+    {
+      code: "SWEETIECHU05_VIP",
+      description: "VIP客戶"
+    },
+    {
+      code: "PEACH.CKT_VIP",
+      description: "VIP客戶"
+    },
+    {
+      code: "LUVU2.CO_VIP",
+      description: "VIP客戶"
+    },
+    {
+      code: "KEKE._.STUDIO_VIP",
+      description: "VIP客戶"
+    },
+    {
+      code: "21_FEMME_VIP",
+      description: "VIP客戶"
+    },
+    {
+      code: "LIFE_SUPPLIER_VIP",
+      description: "VIP客戶"
+    },
+    {
+      code: "VANVAN_TW_VIP",
+      description: "VIP客戶"
+    },
+    {
+      code: "NIHTTW_VIP",
+      description: "VIP客戶"
+    },
+    {
+      code: "PRIMA.0907_VIP",
+      description: "VIP客戶"
+    },
+    {
+      code: "OOTD___STUDIO_VIP",
+      description: "VIP客戶"
+    },
+    {
+      code: "EASYSTORE__TW_VIP",
+      description: "VIP客戶"
+    },
+    {
+      code: "ITSNOTEASY__TW_VIP",
+      description: "VIP客戶"
+    },
+    {
+      code: "THAT_SHOP.CO_VIP",
+      description: "VIP客戶"
+    },
+    {
+      code: "GINGIN_SELECT_VIP",
+      description: "VIP客戶"
+    },
+    {
+      code: "FUTURO_ACCESSORY_VIP",
+      description: "VIP客戶"
+    },
+    {
+      code: "LANIS_CASE_VIP",
+      description: "VIP客戶"
+    },
+    {
+      code: "ALMI.COM.TW_VIP",
+      description: "VIP客戶"
+    },
+    {
+      code: "AME_SOEUR_SELECTSHOP_VIP",
+      description: "VIP客戶"
+    },
+    {
+      code: "DOUBLEWWW.CO_VIP",
+      description: "VIP客戶"
+    },
+    {
+      code: "PILLS_SELECT_VIP",
+      description: "VIP客戶"
+    },
+    {
+      code: "MOSTORE_JAPAN_VIP",
+      description: "VIP客戶"
+    },
+    {
+      code: "NINIS_TW_VIP",
+      description: "VIP客戶"
+    },
+    {
+      code: "SPRIING__OFFICIAL_VIP",
+      description: "VIP客戶"
+    },
+    {
+      code: "ROMANCE__STUDIO_VIP",
+      description: "VIP客戶"
+    },
+    {
+      code: "OSAKA__T.H_VIP",
+      description: "VIP客戶"
+    },
+    {
+      code: "GIZMO.CO__VIP",
+      description: "VIP客戶"
+    },
+    {
+      code: "MCT.S__VIP",
+      description: "VIP客戶"
+    }
+  ]
+
+  // 提取所有有效邀請碼
+  const validCodes = VALID_INVITE_CODES.map(item => item.code)
+
   const platforms = [
     { id: "全部", label: "全部" },
     { id: "facebook", label: "facebook" }, 
     { id: "instagram", label: "Instagram" },
     { id: "電商網站", label: "網站平台" }
   ]
+
+  // 檢查邀請碼是否在 24 小時內有效
+  useEffect(() => {
+    const checkInviteCodeValid = () => {
+      const lastValidation = localStorage.getItem('inviteCodeValidation')
+      if (lastValidation) {
+        const { timestamp } = JSON.parse(lastValidation)
+        const now = Date.now()
+        const twentyFourHours = 24 * 60 * 60 * 1000 // 24 小時
+        
+        // 如果在 24 小時內，不需要重新驗證
+        if (now - timestamp < twentyFourHours) {
+          setShowInvitePopup(false)
+          setIsCheckingAuth(false)
+          return
+        }
+      }
+      
+      // 需要重新驗證
+      setShowInvitePopup(true)
+      setIsCheckingAuth(false)
+    }
+    
+    checkInviteCodeValid()
+    
+    // 在開發者控制台顯示所有有效邀請碼（僅在開發環境）
+    if (process.env.NODE_ENV === 'development') {
+      console.log('📋 有效邀請碼列表:')
+      VALID_INVITE_CODES.forEach((item, index) => {
+        console.log(`${index + 1}. ${item.code} - ${item.description}`)
+      })
+    }
+  }, [])
+
+  // 邀請碼使用統計功能
+  const getInviteCodeStats = () => {
+    const stats = localStorage.getItem('inviteCodeStats')
+    return stats ? JSON.parse(stats) : {}
+  }
+
+  const saveInviteCodeStats = (stats: {[key: string]: number}) => {
+    localStorage.setItem('inviteCodeStats', JSON.stringify(stats))
+  }
+
+  const incrementCodeUsage = (code: string) => {
+    const stats = getInviteCodeStats()
+    stats[code] = (stats[code] || 0) + 1
+    saveInviteCodeStats(stats)
+    return stats[code]
+  }
+
+  const getCodeUsageCount = (code: string) => {
+    const stats = getInviteCodeStats()
+    return stats[code] || 0
+  }
+
+  // 開發者工具函數（可在瀏覽器控制台使用）
+  if (typeof window !== 'undefined') {
+    (window as any).showInviteCodeStats = () => {
+      const stats = getInviteCodeStats()
+      console.log('📊 邀請碼使用統計:')
+      VALID_INVITE_CODES.forEach(item => {
+        const count = stats[item.code] || 0
+        console.log(`${item.code} (${item.description}): ${count} 次`)
+      })
+      return stats
+    }
+
+    (window as any).resetInviteCodeStats = () => {
+      localStorage.removeItem('inviteCodeStats')
+      console.log('📊 邀請碼統計已重置')
+    }
+  }
+
+  // 邀請碼驗證函數
+  const handleInviteCodeSubmit = () => {
+    const inputCode = inviteCode.trim()
+    
+    if (validCodes.includes(inputCode)) {
+      // 找到匹配的邀請碼信息
+      const matchedCode = VALID_INVITE_CODES.find(item => item.code === inputCode)
+      
+      // 增加使用次數
+      const usageCount = incrementCodeUsage(inputCode)
+      
+      console.log(`✅ 邀請碼驗證成功: ${matchedCode?.description}`)
+      console.log(`📊 該邀請碼已使用 ${usageCount} 次`)
+      
+      // 顯示所有邀請碼的使用統計（開發環境）
+      if (process.env.NODE_ENV === 'development') {
+        const stats = getInviteCodeStats()
+        console.log('📊 所有邀請碼使用統計:')
+        VALID_INVITE_CODES.forEach(item => {
+          const count = stats[item.code] || 0
+          console.log(`  ${item.code}: ${count} 次`)
+        })
+      }
+      
+      // 保存驗證成功狀態，24 小時內有效
+      localStorage.setItem('inviteCodeValidation', JSON.stringify({
+        timestamp: Date.now(),
+        code: inputCode
+      }))
+      
+      setShowInvitePopup(false)
+      setInviteCodeError("")
+      setInviteCode("")
+    } else {
+      setInviteCodeError("邀請碼錯誤，請重新輸入")
+    }
+  }
+
+  // 邀請碼輸入處理
+  const handleInviteCodeChange = (value: string) => {
+    setInviteCode(value.toUpperCase())
+    if (inviteCodeError) {
+      setInviteCodeError("")
+    }
+  }
 
   // 動態點點效果 - 文案生成
   useEffect(() => {
@@ -1383,9 +1652,176 @@ export default function Home() {
             textAlign: 'center'
           }}
         >
-          version 1.0｜Built with grit and magic by the Tinker Crew from BZ
+          version 1.1｜Built with grit and magic by the Tinker Crew from BZ
         </p>
       </footer>
+
+      {/* 邀請碼 Popup */}
+      {showInvitePopup && (
+        <div 
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            width: '100%',
+            height: '100%',
+            backgroundColor: 'rgba(0, 0, 0, 0.6)',
+            backdropFilter: 'blur(8px)',
+            zIndex: 9999,
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            padding: '16px'
+          }}
+        >
+          <div 
+            style={{
+              backgroundColor: '#FFFFFF',
+              borderRadius: '20px',
+              padding: '48px',
+              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+              border: '1px solid #E5E7EB',
+              maxWidth: '400px',
+              width: '100%',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: '24px',
+              animation: 'fadeInScale 0.3s ease-out'
+            }}
+          >
+            {/* Logo 或標題 */}
+            <div style={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: '12px'
+            }}>
+              <img 
+                src="/SS Logo.svg" 
+                alt="SnapScript Logo"
+                style={{
+                  width: '190px',
+                  height: '30px'
+                }}
+              />
+            </div>
+
+            {/* 邀請碼輸入 */}
+            <div style={{
+              width: '100%',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '16px'
+            }}>
+              <Input
+                value={inviteCode}
+                onChange={(e) => handleInviteCodeChange(e.target.value)}
+                placeholder="請輸入您的專屬邀請碼"
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    handleInviteCodeSubmit()
+                  }
+                }}
+                style={{
+                  backgroundColor: '#FFFFFF',
+                  border: inviteCodeError ? '2px solid #EF4444' : '1px solid #E5E7EB',
+                  borderRadius: '12px',
+                  padding: '16px',
+                  height: '56px',
+                  fontFamily: 'Inter',
+                  fontSize: '16px',
+                  color: '#000000',
+                  textAlign: 'center',
+                  letterSpacing: '2px',
+                  textTransform: 'uppercase',
+                  outline: 'none',
+                  transition: 'border-color 0.2s ease'
+                }}
+              />
+              
+              {inviteCodeError && (
+                <div style={{
+                  color: '#EF4444',
+                  fontSize: '14px',
+                  fontFamily: 'Inter',
+                  textAlign: 'center',
+                  animation: 'shake 0.5s ease-in-out'
+                }}>
+                  {inviteCodeError}
+                </div>
+              )}
+
+              <Button
+                onClick={handleInviteCodeSubmit}
+                disabled={!inviteCode.trim()}
+                style={{
+                  backgroundColor: inviteCode.trim() ? '#9245E5' : '#E5E7EB',
+                  border: 'none',
+                  borderRadius: '12px',
+                  padding: '16px',
+                  height: '56px',
+                  fontFamily: 'Inter',
+                  fontSize: '16px',
+                  fontWeight: 600,
+                  color: inviteCode.trim() ? '#FFFFFF' : '#9CA3AF',
+                  cursor: inviteCode.trim() ? 'pointer' : 'not-allowed',
+                  transition: 'all 0.2s ease',
+                  transform: inviteCode.trim() ? 'none' : 'scale(0.95)',
+                  opacity: inviteCode.trim() ? 1 : 0.6
+                }}
+              >
+                確認
+              </Button>
+            </div>
+
+            {/* 提示信息 */}
+            <div style={{
+              fontSize: '12px',
+              color: '#9CA3AF',
+              textAlign: 'center',
+              fontFamily: 'Inter',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '8px'
+            }}>
+              <div style={{ 
+                color: '#6B7280',
+                fontSize: '11px',
+                fontWeight: 500 
+              }}>
+                ✨ 驗證成功後 24 小時內免重複驗證
+              </div>
+              <div>
+                想體驗 SnapScript？
+              </div>
+              <div>
+                歡迎來信至 <a 
+                  href="mailto:hello@snapscript.io" 
+                  style={{
+                    color: '#9245E5',
+                    textDecoration: 'underline',
+                    fontWeight: 500
+                  }}
+                >
+                  hello@snapscript.io
+                </a> 或 <a 
+                  href="https://www.instagram.com/snapscript.io/" 
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{
+                    color: '#9245E5',
+                    textDecoration: 'underline',
+                    fontWeight: 500
+                  }}
+                >
+                  IG
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
